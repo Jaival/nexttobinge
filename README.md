@@ -95,7 +95,7 @@ lib/
   db/               Drizzle schema, client, and migrations
   tmdb.ts           TMDB API helpers
   anilist.ts        AniList GraphQL helpers
-middleware.ts       Clerk auth — protects all routes except home and auth
+proxy.ts            Clerk auth — only watchlists require sign-in; browsing is public
 ```
 
 ## Available Scripts

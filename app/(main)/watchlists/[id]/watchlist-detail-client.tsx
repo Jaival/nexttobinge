@@ -3,9 +3,8 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeftIcon, Trash2Icon, StarIcon } from "lucide-react";
+import { ArrowLeftIcon, Trash2Icon, StarIcon, ListIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -13,12 +12,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
+import { EmptyState } from "@/components/empty-state";
+import { ConfirmDialog } from "@/components/confirm-dialog";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import type { Watchlist, WatchlistItem } from "@/lib/db/schema";
 
 const STATUS_LABELS = {
-  plan: "Plan to Watch",
+  plan: "Plan to watch",
   watching: "Watching",
   watched: "Watched",
 } as const;
@@ -31,9 +32,12 @@ const TYPE_HREF: Record<string, string> = {
 
 const TYPE_LABELS: Record<string, string> = {
   movie: "Movie",
-  tv: "Drama",
+  tv: "Series",
   anime: "Anime",
 };
+
+const FILTERS = ["all", "plan", "watching", "watched"] as const;
+type Filter = (typeof FILTERS)[number];
 
 interface WatchlistDetailClientProps {
   watchlist: Watchlist;
@@ -42,9 +46,15 @@ interface WatchlistDetailClientProps {
 
 export function WatchlistDetailClient({ watchlist, initialItems }: WatchlistDetailClientProps) {
   const [items, setItems] = useState(initialItems);
-  const [filter, setFilter] = useState<"all" | "plan" | "watching" | "watched">("all");
+  const [filter, setFilter] = useState<Filter>("all");
+  const [removeTarget, setRemoveTarget] = useState<WatchlistItem | null>(null);
+  const [removingId, setRemovingId] = useState<string | null>(null);
 
   async function handleStatusChange(item: WatchlistItem, status: "plan" | "watching" | "watched") {
+    // Optimistic: the select has already moved, so reverting on failure is
+    // clearer than leaving it showing a value the server never accepted.
+    const previous = item.status;
+    setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, status } : i)));
     try {
       const res = await fetch(`/api/watchlists/${watchlist.id}/items/${item.id}`, {
         method: "PATCH",
@@ -52,31 +62,34 @@ export function WatchlistDetailClient({ watchlist, initialItems }: WatchlistDeta
         body: JSON.stringify({ status }),
       });
       if (!res.ok) throw new Error();
-      setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, status } : i)));
-      toast.success("Status updated");
     } catch {
+      setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, status: previous } : i)));
       toast.error("Failed to update status");
     }
   }
 
   async function handleRemove(item: WatchlistItem) {
-    if (!confirm(`Remove "${item.title}" from this watchlist?`)) return;
+    setRemovingId(item.id);
     try {
-      const res = await fetch(
-        `/api/watchlists/${watchlist.id}/items?itemId=${item.id}`,
-        { method: "DELETE" }
-      );
+      const res = await fetch(`/api/watchlists/${watchlist.id}/items?itemId=${item.id}`, {
+        method: "DELETE",
+      });
       if (!res.ok) throw new Error();
-      setItems((prev) => prev.filter((i) => i.id !== item.id));
+      // Let the exit transition finish before unmounting the row.
+      window.setTimeout(() => {
+        setItems((prev) => prev.filter((i) => i.id !== item.id));
+        setRemovingId(null);
+      }, 220);
       toast.success(`"${item.title}" removed`);
     } catch {
+      setRemovingId(null);
       toast.error("Failed to remove item");
     }
   }
 
   const filtered = filter === "all" ? items : items.filter((i) => i.status === filter);
 
-  const counts = {
+  const counts: Record<Filter, number> = {
     all: items.length,
     plan: items.filter((i) => i.status === "plan").length,
     watching: items.filter((i) => i.status === "watching").length,
@@ -85,121 +98,161 @@ export function WatchlistDetailClient({ watchlist, initialItems }: WatchlistDeta
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" asChild className="size-8">
-          <Link href="/watchlists">
-            <ArrowLeftIcon className="size-4" />
+      <div className="flex items-start gap-3">
+        <Button variant="ghost" size="icon-sm" asChild className="mt-1">
+          <Link href="/watchlists" aria-label="Back to watchlists">
+            <ArrowLeftIcon />
           </Link>
         </Button>
-        <div>
-          <h1 className="font-heading text-2xl font-semibold">{watchlist.name}</h1>
-          {watchlist.description && (
-            <p className="text-sm text-muted-foreground">{watchlist.description}</p>
-          )}
+        <div className="min-w-0">
+          <h1 className="text-title truncate">{watchlist.name}</h1>
+          <p className="text-meta mt-1 text-muted-foreground">
+            {items.length} item{items.length !== 1 ? "s" : ""}
+          </p>
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        {(["all", "plan", "watching", "watched"] as const).map((s) => (
-          <Button
-            key={s}
-            variant={filter === s ? "default" : "outline"}
-            size="sm"
-            onClick={() => setFilter(s)}
+      <div className="rail gap-2">
+        {FILTERS.map((value) => (
+          <button
+            key={value}
+            type="button"
+            onClick={() => setFilter(value)}
+            aria-pressed={filter === value}
+            className={cn(
+              "flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors duration-150",
+              filter === value
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted text-muted-foreground hover:bg-accent hover:text-foreground"
+            )}
           >
-            {s === "all" ? "All" : STATUS_LABELS[s]}
-            <Badge variant="secondary" className="ml-1.5 text-[10px] px-1.5 py-0">
-              {counts[s]}
-            </Badge>
-          </Button>
+            {value === "all" ? "All" : STATUS_LABELS[value]}
+            <span className="text-meta opacity-70">{counts[value]}</span>
+          </button>
         ))}
       </div>
 
-      <Separator />
-
       {filtered.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-24 text-muted-foreground">
-          <p className="text-lg font-medium">
-            {items.length === 0 ? "This watchlist is empty" : "No items with this status"}
-          </p>
-          {items.length === 0 && (
-            <p className="text-sm">Browse movies, dramas and anime to add them here.</p>
-          )}
-        </div>
+        <EmptyState
+          icon={ListIcon}
+          title={items.length === 0 ? "This watchlist is empty" : "Nothing with that status"}
+          description={
+            items.length === 0
+              ? "Browse movies, series and anime, then add them here."
+              : undefined
+          }
+        />
       ) : (
-        <div className="flex flex-col gap-3">
-          {filtered.map((item) => (
-            <div
-              key={item.id}
-              className="flex items-center gap-4 rounded-xl border border-border bg-card p-3 shadow-xs"
-            >
-              <Link
-                href={`${TYPE_HREF[item.mediaType]}/${item.mediaId}`}
-                className="relative size-14 shrink-0 overflow-hidden rounded-lg bg-muted"
-              >
-                {item.posterUrl ? (
-                  <Image src={item.posterUrl} alt={item.title} fill className="object-cover" sizes="56px" />
-                ) : (
-                  <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
-                    {item.title.charAt(0)}
-                  </div>
-                )}
-              </Link>
+        <ul className="flex flex-col gap-2">
+          {filtered.map((item) => {
+            const href = `${TYPE_HREF[item.mediaType]}/${item.mediaId}`;
+            const rating = item.rating
+              ? (item.mediaType === "anime"
+                  ? Number(item.rating) / 10
+                  : Number(item.rating)
+                ).toFixed(1)
+              : null;
 
-              <div className="flex flex-1 flex-col gap-1 min-w-0">
+            return (
+              <li
+                key={item.id}
+                data-removing={removingId === item.id}
+                className="row-item flex items-center gap-3 rounded-xl bg-card p-2.5 ring-1 ring-border"
+              >
                 <Link
-                  href={`${TYPE_HREF[item.mediaType]}/${item.mediaId}`}
-                  className="font-medium leading-tight truncate hover:text-primary transition-colors"
+                  href={href}
+                  className="relative size-14 shrink-0 overflow-hidden rounded-lg bg-muted"
                 >
-                  {item.title}
-                </Link>
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                    {TYPE_LABELS[item.mediaType]}
-                  </Badge>
-                  {item.releaseYear && (
-                    <span className="text-xs text-muted-foreground">{item.releaseYear}</span>
-                  )}
-                  {item.rating && (
-                    <span className="flex items-center gap-0.5 text-xs text-yellow-500">
-                      <StarIcon className="size-3 fill-yellow-500" />
-                      {item.mediaType === "anime"
-                        ? (Number(item.rating) / 10).toFixed(1)
-                        : Number(item.rating).toFixed(1)}
+                  {item.posterUrl ? (
+                    <Image
+                      src={item.posterUrl}
+                      alt=""
+                      fill
+                      className="object-cover"
+                      sizes="56px"
+                    />
+                  ) : (
+                    <span className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                      {item.title.charAt(0)}
                     </span>
                   )}
-                </div>
-              </div>
+                </Link>
 
-              <div className="flex items-center gap-2 shrink-0">
-                <Select
-                  value={item.status}
-                  onValueChange={(v) => handleStatusChange(item, v as "plan" | "watching" | "watched")}
-                >
-                  <SelectTrigger className="w-36 h-8 text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {(["plan", "watching", "watched"] as const).map((s) => (
-                      <SelectItem key={s} value={s} className="text-xs">
-                        {STATUS_LABELS[s]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="size-8 text-destructive hover:text-destructive"
-                  onClick={() => handleRemove(item)}
-                >
-                  <Trash2Icon className="size-4" />
-                </Button>
-              </div>
-            </div>
-          ))}
-        </div>
+                <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                  <Link
+                    href={href}
+                    className="truncate text-sm font-medium leading-snug tracking-[-0.01em] transition-colors duration-150 hover:text-primary"
+                  >
+                    {item.title}
+                  </Link>
+                  <p className="text-meta flex items-center gap-2 text-muted-foreground">
+                    <span>{TYPE_LABELS[item.mediaType]}</span>
+                    {item.releaseYear && (
+                      <>
+                        <span aria-hidden>·</span>
+                        <span>{item.releaseYear}</span>
+                      </>
+                    )}
+                    {rating && (
+                      <>
+                        <span aria-hidden>·</span>
+                        <span className="flex items-center gap-1">
+                          <StarIcon className="size-3 fill-rating text-rating" />
+                          {rating}
+                        </span>
+                      </>
+                    )}
+                  </p>
+                </div>
+
+                <div className="flex shrink-0 items-center gap-1">
+                  <Select
+                    value={item.status}
+                    onValueChange={(v) =>
+                      handleStatusChange(item, v as "plan" | "watching" | "watched")
+                    }
+                  >
+                    <SelectTrigger
+                      size="sm"
+                      className="w-[8.5rem] text-xs"
+                      aria-label={`Status for ${item.title}`}
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(["plan", "watching", "watched"] as const).map((s) => (
+                        <SelectItem key={s} value={s} className="text-xs">
+                          {STATUS_LABELS[s]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label={`Remove ${item.title}`}
+                    className="text-destructive hover:text-destructive"
+                    onClick={() => setRemoveTarget(item)}
+                  >
+                    <Trash2Icon />
+                  </Button>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
       )}
+
+      <ConfirmDialog
+        open={!!removeTarget}
+        onOpenChange={(open) => {
+          if (!open) setRemoveTarget(null);
+        }}
+        title="Remove from watchlist?"
+        description={`"${removeTarget?.title}" will be removed from ${watchlist.name}.`}
+        confirmLabel="Remove"
+        onConfirm={() => removeTarget && handleRemove(removeTarget)}
+      />
     </div>
   );
 }

@@ -1,17 +1,29 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono, Manrope, Roboto_Slab } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { ClerkProvider } from "@clerk/nextjs";
+import { ThemeProvider, PALETTE_SCRIPT } from "@/components/theme-provider";
 
-const robotoSlabHeading = Roboto_Slab({ subsets: ["latin"], variable: "--font-heading" });
-const manrope = Manrope({ subsets: ["latin"], variable: "--font-sans" });
+// One family for UI, mono for numeric metadata. See DESIGN.md §3.
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "NextToBinge — Discover Movies, Dramas & Anime",
-  description: "Find movies, dramas, and anime to watch. Save them in personal watchlists.",
+  title: "NextToBinge — Discover Movies, Series & Anime",
+  description: "Find movies, series, and anime to watch. Save them in personal watchlists.",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  // Without viewport-fit=cover every env(safe-area-inset-*) resolves to 0px.
+  viewportFit: "cover",
+  // Makes the Android software keyboard shrink the layout viewport, so dvh
+  // and bottom-pinned UI react the way they already do on iOS.
+  interactiveWidget: "resizes-content",
+  // Default (violet · dark); ThemeProvider rewrites this on every switch.
+  themeColor: "#111016",
 };
 
 export default function RootLayout({
@@ -20,18 +32,22 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider>
+    // Point Clerk at app/(auth); otherwise modal hand-offs (e.g. an OAuth
+    // account that already exists) fall back to the hosted Account Portal.
+    <ClerkProvider signInUrl="/sign-in" signUpUrl="/sign-up">
       <html
         lang="en"
-        className={cn(
-          "h-full antialiased font-sans",
-          geistSans.variable,
-          geistMono.variable,
-          manrope.variable,
-          robotoSlabHeading.variable
-        )}
+        suppressHydrationWarning
+        className={cn("h-full antialiased font-sans", geistSans.variable, geistMono.variable)}
       >
-        <body className="min-h-full flex flex-col">{children}</body>
+        <head>
+          {/* Applies the stored palette before first paint. next-themes injects
+              its own equivalent for the light/dark class. */}
+          <script dangerouslySetInnerHTML={{ __html: PALETTE_SCRIPT }} />
+        </head>
+        <body className="min-h-full flex flex-col">
+          <ThemeProvider>{children}</ThemeProvider>
+        </body>
       </html>
     </ClerkProvider>
   );

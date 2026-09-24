@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useAuth, useClerk } from "@clerk/nextjs";
 import { PlusIcon, CheckIcon, ListIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,6 +21,20 @@ interface WatchlistDialogProps {
   item: MediaCardItem | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+}
+
+/**
+ * Browsing is public, watchlists are not. Wraps an "add" handler so a
+ * signed-out visitor gets the sign-in modal instead of a dialog whose fetches
+ * would all 404 behind the auth proxy.
+ */
+export function useRequireSignIn() {
+  const { isSignedIn } = useAuth();
+  const clerk = useClerk();
+  return function requireSignIn(action: () => void) {
+    if (isSignedIn) action();
+    else clerk.openSignIn();
+  };
 }
 
 export function WatchlistDialog({ item, open, onOpenChange }: WatchlistDialogProps) {

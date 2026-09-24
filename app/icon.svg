@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Mirrors components/logo.tsx with the default violet palette baked in. -->
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#a289f8"/>
+      <stop offset="1" stop-color="#de79d7"/>
+    </linearGradient>
+  </defs>
+  <rect width="32" height="32" rx="9.6" fill="url(#g)"/>
+  <g transform="translate(6.08 6.08) scale(0.827)" fill="#100c1f">
+    <path d="M6.5 6.2v11.6a.8.8 0 0 0 1.2.7l8.9-5.8a.8.8 0 0 0 0-1.4L7.7 5.5a.8.8 0 0 0-1.2.7Z" stroke="#100c1f" stroke-width="1.5" stroke-linejoin="round"/>
+    <rect x="17.25" y="5.25" width="2.75" height="13.5" rx="1.375"/>
+  </g>
+</svg>

@@ -2,6 +2,8 @@ import { SearchIcon } from "lucide-react";
 import { searchMovies, searchTV, posterUrl } from "@/lib/tmdb";
 import { searchAnime, getAnimeTitle } from "@/lib/anilist";
 import { MediaGrid } from "@/components/media-grid";
+import { PageHeader } from "@/components/page-header";
+import { EmptyState } from "@/components/empty-state";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { MediaCardItem } from "@/components/media-card";
 
@@ -15,15 +17,15 @@ export default async function SearchPage({ searchParams }: PageProps) {
 
   if (!query) {
     return (
-      <div className="flex flex-col items-center justify-center py-24 text-muted-foreground">
-        <SearchIcon className="size-12 mb-4" />
-        <p className="text-lg font-medium">Search for movies, dramas & anime</p>
-        <p className="text-sm">Use the search bar above to find something to watch.</p>
-      </div>
+      <EmptyState
+        icon={SearchIcon}
+        title="Search for something to watch"
+        description="Movies, series and anime. Use the search bar above to start."
+      />
     );
   }
 
-  const [moviesData, dramasData, animeData] = await Promise.all([
+  const [moviesData, seriesData, animeData] = await Promise.all([
     searchMovies(query),
     searchTV(query),
     searchAnime(query),
@@ -38,7 +40,7 @@ export default async function SearchPage({ searchParams }: PageProps) {
     type: "movie",
   }));
 
-  const dramas: MediaCardItem[] = dramasData.results.map((t) => ({
+  const series: MediaCardItem[] = seriesData.results.map((t) => ({
     id: t.id,
     title: t.name,
     posterUrl: posterUrl(t.poster_path),
@@ -56,38 +58,38 @@ export default async function SearchPage({ searchParams }: PageProps) {
     type: "anime",
   }));
 
-  const total = movies.length + dramas.length + animes.length;
+  const total = movies.length + series.length + animes.length;
+
+  const TABS = [
+    { value: "all", label: "All", items: [...movies, ...series, ...animes], mixed: true },
+    { value: "movies", label: "Movies", items: movies, mixed: false },
+    { value: "series", label: "Series", items: series, mixed: false },
+    { value: "anime", label: "Anime", items: animes, mixed: false },
+  ];
 
   return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="font-heading text-2xl font-semibold">
-          Results for &ldquo;{query}&rdquo;
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          {total} result{total !== 1 ? "s" : ""} found
-        </p>
-      </div>
+    <div className="flex flex-col gap-8">
+      <PageHeader
+        title={`Results for “${query}”`}
+        description={`${total} result${total !== 1 ? "s" : ""} found`}
+      />
 
+      {/* Content swaps instantly: tab switching is core navigation, and motion
+          here would only add latency. DESIGN.md §5 "What deliberately does not animate" */}
       <Tabs defaultValue="all">
         <TabsList>
-          <TabsTrigger value="all">All ({total})</TabsTrigger>
-          <TabsTrigger value="movies">Movies ({movies.length})</TabsTrigger>
-          <TabsTrigger value="dramas">Dramas ({dramas.length})</TabsTrigger>
-          <TabsTrigger value="anime">Anime ({animes.length})</TabsTrigger>
+          {TABS.map((tab) => (
+            <TabsTrigger key={tab.value} value={tab.value}>
+              {tab.label}
+              <span className="text-meta ml-1.5 text-muted-foreground">{tab.items.length}</span>
+            </TabsTrigger>
+          ))}
         </TabsList>
-        <TabsContent value="all" className="mt-4">
-          <MediaGrid items={[...movies, ...dramas, ...animes]} />
-        </TabsContent>
-        <TabsContent value="movies" className="mt-4">
-          <MediaGrid items={movies} />
-        </TabsContent>
-        <TabsContent value="dramas" className="mt-4">
-          <MediaGrid items={dramas} />
-        </TabsContent>
-        <TabsContent value="anime" className="mt-4">
-          <MediaGrid items={animes} />
-        </TabsContent>
+        {TABS.map((tab) => (
+          <TabsContent key={tab.value} value={tab.value} className="mt-6">
+            <MediaGrid items={tab.items} showType={tab.mixed} />
+          </TabsContent>
+        ))}
       </Tabs>
     </div>
   );

@@ -1,6 +1,6 @@
-import { SparklesIcon } from "lucide-react";
 import { getTrendingAnime, getAnimeTitle } from "@/lib/anilist";
 import { BrowsePageClient } from "@/components/browse-page-client";
+import { PageHeader } from "@/components/page-header";
 import type { MediaCardItem } from "@/components/media-card";
 
 interface PageProps {
@@ -22,11 +22,8 @@ export default async function AnimePage({ searchParams }: PageProps) {
   }));
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex items-center gap-2">
-        <SparklesIcon className="size-6 text-primary" />
-        <h1 className="font-heading text-2xl font-semibold">Anime</h1>
-      </div>
+    <div className="flex flex-col gap-8">
+      <PageHeader title="Anime" description="What the AniList community is watching now." />
       <BrowsePageClient items={items} totalPages={data.pageInfo.lastPage} currentPage={page} />
     </div>
   );
