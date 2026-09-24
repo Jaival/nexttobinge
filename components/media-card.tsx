@@ -2,8 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { StarIcon, PlusIcon } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { useCallback, useState } from "react";
+import { StarIcon, PlusIcon, ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -21,12 +21,14 @@ export interface MediaCardItem {
 interface MediaCardProps {
   item: MediaCardItem;
   onAddToWatchlist?: (item: MediaCardItem) => void;
+  /** Only true on mixed grids. On a "Trending Anime" row the badge is noise. */
+  showType?: boolean;
   className?: string;
 }
 
 const TYPE_LABELS: Record<MediaType, string> = {
   movie: "Movie",
-  tv: "Drama",
+  tv: "Series",
   anime: "Anime",
 };
 
@@ -36,66 +38,86 @@ const TYPE_HREF: Record<MediaType, string> = {
   anime: "/media/anime",
 };
 
-export function MediaCard({ item, onAddToWatchlist, className }: MediaCardProps) {
-  return (
-    <div className={cn("group relative flex flex-col", className)}>
-      <Link href={`${TYPE_HREF[item.type]}/${item.id}`} className="block">
-        <div className="relative aspect-[2/3] overflow-hidden rounded-lg bg-muted">
-          {item.posterUrl ? (
-            <Image
-              src={item.posterUrl}
-              alt={item.title}
-              fill
-              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 200px"
-              className="object-cover transition-transform duration-300 group-hover:scale-105"
-            />
-          ) : (
-            <div className="flex h-full items-center justify-center text-muted-foreground text-xs">
-              No Image
-            </div>
-          )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
-          <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between opacity-0 transition-opacity group-hover:opacity-100">
-            {item.rating !== null && item.rating > 0 && (
-              <span className="flex items-center gap-1 rounded-md bg-black/70 px-1.5 py-0.5 text-xs text-yellow-400">
-                <StarIcon className="size-3 fill-yellow-400" />
-                {item.type === "anime"
-                  ? (item.rating / 10).toFixed(1)
-                  : item.rating.toFixed(1)}
-              </span>
-            )}
-          </div>
-        </div>
-      </Link>
+/** AniList scores are 0-100, TMDB 0-10. Normalise to one decimal out of 10. */
+function formatRating(item: MediaCardItem) {
+  // == null, not === null: unscored search results arrive with the field
+  // missing entirely, despite the type.
+  if (item.rating == null || item.rating <= 0) return null;
+  return (item.type === "anime" ? item.rating / 10 : item.rating).toFixed(1);
+}
 
-      <div className="mt-2 flex flex-col gap-1">
-        <div className="flex items-start justify-between gap-1">
-          <Link
-            href={`${TYPE_HREF[item.type]}/${item.id}`}
-            className="line-clamp-2 text-sm font-medium leading-tight hover:text-primary transition-colors"
+export function MediaCard({ item, onAddToWatchlist, showType, className }: MediaCardProps) {
+  const [loaded, setLoaded] = useState(false);
+
+  // An image served from cache can already be complete before React attaches
+  // onLoad, in which case the event never fires and the poster would stay at
+  // opacity 0 forever. Ref callbacks run in the commit phase, so this catches it.
+  // naturalWidth is 0 when a complete image actually failed — leave those
+  // hidden so the muted frame shows instead of a broken-image glyph.
+  const checkComplete = useCallback((node: HTMLImageElement | null) => {
+    if (node?.complete && node.naturalWidth > 0) setLoaded(true);
+  }, []);
+
+  const href = `${TYPE_HREF[item.type]}/${item.id}`;
+  const rating = formatRating(item);
+
+  return (
+    <div className={cn("poster-card flex flex-col gap-2", className)}>
+      <div className="poster-frame">
+        {item.posterUrl ? (
+          <Image
+            src={item.posterUrl}
+            alt=""
+            fill
+            sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, (max-width: 1280px) 20vw, 200px"
+            ref={checkComplete}
+            data-loaded={loaded}
+            onLoad={() => setLoaded(true)}
+            className="poster-img object-cover"
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center text-muted-foreground">
+            <ImageIcon className="size-6" />
+          </div>
+        )}
+
+        {/* Covers the poster for pointer users; kept out of the tab order so the
+            title link below is the single keyboard target. */}
+        <Link href={href} aria-hidden tabIndex={-1} className="absolute inset-0 z-10" />
+
+        {/* Information the user reads — always visible, never hover-gated. */}
+        {rating && (
+          <span className="text-meta pointer-events-none absolute left-2 top-2 z-20 flex items-center gap-1 rounded-full bg-black/55 px-1.5 py-0.5 text-white backdrop-blur-sm">
+            <StarIcon className="size-3 fill-rating text-rating" />
+            {rating}
+          </span>
+        )}
+
+        {onAddToWatchlist && (
+          <Button
+            size="icon-sm"
+            variant="secondary"
+            className="card-reveal absolute right-2 top-2 z-20 rounded-full shadow-sm"
+            onClick={() => onAddToWatchlist(item)}
+            aria-label={`Add ${item.title} to a watchlist`}
           >
-            {item.title}
-          </Link>
-          {onAddToWatchlist && (
-            <Button
-              size="icon"
-              variant="ghost"
-              className="size-7 shrink-0 -mr-1 -mt-0.5 opacity-0 transition-opacity group-hover:opacity-100"
-              onClick={() => onAddToWatchlist(item)}
-              title="Add to watchlist"
-            >
-              <PlusIcon className="size-4" />
-            </Button>
-          )}
-        </div>
-        <div className="flex items-center gap-1.5">
-          <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-            {TYPE_LABELS[item.type]}
-          </Badge>
-          {item.year && (
-            <span className="text-xs text-muted-foreground">{item.year}</span>
-          )}
-        </div>
+            <PlusIcon />
+          </Button>
+        )}
+      </div>
+
+      <div className="flex flex-col gap-0.5">
+        <Link
+          href={href}
+          className="line-clamp-2 text-sm font-medium leading-snug tracking-[-0.01em] transition-colors duration-150 hover:text-primary"
+        >
+          {item.title}
+        </Link>
+        <p className="text-meta text-muted-foreground">
+          {[showType ? TYPE_LABELS[item.type] : null, item.year]
+            .filter(Boolean)
+            .join(" · ") || " "}
+        </p>
       </div>
     </div>
   );
@@ -104,9 +126,9 @@ export function MediaCard({ item, onAddToWatchlist, className }: MediaCardProps)
 export function MediaCardSkeleton() {
   return (
     <div className="flex flex-col gap-2">
-      <div className="aspect-[2/3] rounded-lg bg-muted animate-pulse" />
-      <div className="h-4 w-3/4 rounded bg-muted animate-pulse" />
-      <div className="h-3 w-1/2 rounded bg-muted animate-pulse" />
+      <div className="aspect-[2/3] animate-pulse rounded-xl bg-muted" />
+      <div className="h-4 w-3/4 animate-pulse rounded bg-muted" />
+      <div className="h-3 w-1/3 animate-pulse rounded bg-muted" />
     </div>
   );
 }

@@ -5,8 +5,13 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   return (
     <>
       <Navbar />
-      <main className="flex-1 mx-auto w-full max-w-7xl px-4 py-6 sm:px-6">{children}</main>
-      <Toaster richColors position="bottom-right" />
+      <main
+        className="mx-auto w-full max-w-7xl flex-1 px-4 pb-16 pt-6 sm:px-6 lg:px-8"
+        style={{ paddingBottom: "calc(4rem + env(safe-area-inset-bottom, 0px))" }}
+      >
+        {children}
+      </main>
+      <Toaster position="bottom-right" />
     </>
   );
 }

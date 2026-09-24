@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { FilmIcon, TvIcon, SparklesIcon, ArrowRightIcon } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { MediaGrid } from "@/components/media-grid";
 import {
   getTrendingMovies,
@@ -46,70 +45,69 @@ function animeToCard(a: AniListMedia): MediaCardItem {
 }
 
 const SECTIONS = [
-  {
-    id: "movies",
-    title: "Trending Movies",
-    href: "/browse/movies",
-    icon: FilmIcon,
-  },
-  {
-    id: "dramas",
-    title: "Trending Dramas",
-    href: "/browse/dramas",
-    icon: TvIcon,
-  },
-  {
-    id: "anime",
-    title: "Trending Anime",
-    href: "/browse/anime",
-    icon: SparklesIcon,
-  },
-];
+  { id: "movies", title: "Trending movies", href: "/browse/movies", icon: FilmIcon },
+  { id: "series", title: "Trending series", href: "/browse/series", icon: TvIcon },
+  { id: "anime", title: "Trending anime", href: "/browse/anime", icon: SparklesIcon },
+] as const;
 
 export default async function HomePage() {
-  const [moviesData, dramasData, animeData] = await Promise.all([
+  const [moviesData, seriesData, animeData] = await Promise.all([
     getTrendingMovies(),
     getTrendingTV(),
-    getTrendingAnime(1, 10),
+    getTrendingAnime(1, 12),
   ]);
 
-  const movies = moviesData.results.slice(0, 10).map(movieToCard);
-  const dramas = dramasData.results.slice(0, 10).map(tvToCard);
-  const animes = animeData.media.slice(0, 10).map(animeToCard);
-
-  const allItems = { movies, dramas, anime: animes };
+  const allItems = {
+    movies: moviesData.results.slice(0, 12).map(movieToCard),
+    series: seriesData.results.slice(0, 12).map(tvToCard),
+    anime: animeData.media.slice(0, 12).map(animeToCard),
+  };
 
   return (
-    <div className="flex flex-col gap-12">
-      <section className="flex flex-col gap-3 pt-4">
-        <h1 className="font-heading text-3xl font-semibold tracking-tight sm:text-4xl">
-          Discover Your Next Binge
-        </h1>
-        <p className="max-w-xl text-muted-foreground">
-          Browse trending movies, dramas, and anime. Save your favourites into personal watchlists.
+    <div className="flex flex-col gap-14">
+      {/* One focal moment, then straight into content. DESIGN.md §7 */}
+      <section className="relative isolate -mx-4 overflow-hidden px-4 pb-2 pt-8 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -top-40 left-1/2 -z-10 size-[36rem] -translate-x-1/2 rounded-full opacity-20 blur-3xl"
+          style={{
+            background:
+              "radial-gradient(circle, var(--brand) 0%, var(--primary) 45%, transparent 70%)",
+          }}
+        />
+        <h1 className="text-display max-w-2xl text-balance">Find your next binge.</h1>
+        <p className="mt-4 max-w-md text-[15px] leading-relaxed text-muted-foreground">
+          Trending movies, series and anime in one place. Save anything to a personal watchlist.
         </p>
+        <div className="rail mt-6 gap-2">
+          {SECTIONS.map(({ id, href, icon: Icon, title }) => (
+            <Link
+              key={id}
+              href={href}
+              className="flex shrink-0 items-center gap-1.5 rounded-full bg-muted px-3.5 py-1.5 text-sm font-medium transition-colors duration-150 hover:bg-accent"
+            >
+              <Icon className="size-3.5 text-primary" />
+              {title.replace("Trending ", "")}
+            </Link>
+          ))}
+        </div>
       </section>
 
-      {SECTIONS.map(({ id, title, href, icon: Icon }) => {
-        const items = allItems[id as keyof typeof allItems];
-        return (
-          <section key={id} className="flex flex-col gap-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Icon className="size-5 text-primary" />
-                <h2 className="font-heading text-xl font-semibold">{title}</h2>
-              </div>
-              <Button variant="ghost" size="sm" asChild>
-                <Link href={href} className="flex items-center gap-1">
-                  View all
-                  <ArrowRightIcon className="size-4" />
-                </Link>
-              </Button>
-            </div>
-            <MediaGrid items={items} />
-          </section>
-        );
-      })}
+      {SECTIONS.map(({ id, title, href }) => (
+        <section key={id} className="flex flex-col gap-4">
+          <div className="flex items-baseline justify-between gap-4">
+            <h2 className="text-section">{title}</h2>
+            <Link
+              href={href}
+              className="group flex shrink-0 items-center gap-1 text-sm font-medium text-muted-foreground transition-colors duration-150 hover:text-foreground"
+            >
+              View all
+              <ArrowRightIcon className="size-3.5" />
+            </Link>
+          </div>
+          <MediaGrid items={allItems[id]} />
+        </section>
+      ))}
     </div>
   );
 }

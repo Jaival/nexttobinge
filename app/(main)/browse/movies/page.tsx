@@ -1,6 +1,6 @@
-import { FilmIcon } from "lucide-react";
 import { discoverMovies, posterUrl } from "@/lib/tmdb";
 import { BrowsePageClient } from "@/components/browse-page-client";
+import { PageHeader } from "@/components/page-header";
 import type { MediaCardItem } from "@/components/media-card";
 
 interface PageProps {
@@ -22,11 +22,8 @@ export default async function MoviesPage({ searchParams }: PageProps) {
   }));
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex items-center gap-2">
-        <FilmIcon className="size-6 text-primary" />
-        <h1 className="font-heading text-2xl font-semibold">Movies</h1>
-      </div>
+    <div className="flex flex-col gap-8">
+      <PageHeader title="Movies" description="Popular and highly rated films." />
       <BrowsePageClient items={items} totalPages={data.total_pages} currentPage={Number(page)} />
     </div>
   );

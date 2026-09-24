@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { BookmarkPlusIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { WatchlistDialog } from "@/components/watchlist-dialog";
+import { WatchlistDialog, useRequireSignIn } from "@/components/watchlist-dialog";
 import type { MediaCardItem } from "@/components/media-card";
 
 interface AddToWatchlistButtonProps {
@@ -12,10 +12,11 @@ interface AddToWatchlistButtonProps {
 
 export function AddToWatchlistButton({ item }: AddToWatchlistButtonProps) {
   const [open, setOpen] = useState(false);
+  const requireSignIn = useRequireSignIn();
 
   return (
     <>
-      <Button onClick={() => setOpen(true)} size="sm">
+      <Button onClick={() => requireSignIn(() => setOpen(true))} size="sm">
         <BookmarkPlusIcon data-icon="inline-start" />
         Add to Watchlist
       </Button>

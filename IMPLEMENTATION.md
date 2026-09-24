@@ -38,7 +38,7 @@ Defined in `env.ts` using `@t3-oss/env-nextjs` with Zod validation. A `.env.loca
 ## Authentication — Clerk
 
 **Files:**
-- `middleware.ts` — uses `clerkMiddleware` + `createRouteMatcher` to protect all routes except `/`, `/sign-in`, and `/sign-up`
+- `proxy.ts` (Next.js 16's name for middleware) — uses `clerkMiddleware` + `createRouteMatcher`; browsing, detail pages and search are public, only watchlists (pages and API) require sign-in
 - `app/layout.tsx` — wraps the entire app in `<ClerkProvider>`
 - `app/(auth)/sign-in/[[...sign-in]]/page.tsx` — renders Clerk's hosted `<SignIn />` component
 - `app/(auth)/sign-up/[[...sign-up]]/page.tsx` — renders Clerk's hosted `<SignUp />` component
@@ -199,7 +199,7 @@ app/
           route.ts                      GET items, POST add, DELETE remove
           [itemId]/
             route.ts                    PATCH update status
-middleware.ts
+proxy.ts
 ```
 
 ---

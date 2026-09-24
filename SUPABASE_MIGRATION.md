@@ -148,4 +148,4 @@ The `clerk_id` is the bridge between Clerk sessions (used in API routes via `aut
   - `user.created` → `INSERT INTO users`
   - `user.updated` → `UPDATE users SET ... WHERE clerk_id = ?`
   - `user.deleted` → `DELETE FROM users WHERE clerk_id = ?`
-- The route is excluded from Clerk's auth middleware (listed as a public route in `middleware.ts`) so Clerk itself can reach it without a session token.
+- The route is excluded from Clerk's auth proxy (listed as a public route in `proxy.ts`) so Clerk itself can reach it without a session token.

@@ -26,10 +26,10 @@ export function BrowsePageClient({ items, totalPages, currentPage }: BrowsePageC
   const safeTotal = Math.min(totalPages, 500);
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-8">
       <MediaGrid items={items} />
       {safeTotal > 1 && (
-        <div className="flex items-center justify-center gap-2">
+        <div className="flex items-center justify-center gap-3">
           <Button
             variant="outline"
             size="sm"
@@ -39,8 +39,8 @@ export function BrowsePageClient({ items, totalPages, currentPage }: BrowsePageC
             <ChevronLeftIcon className="size-4" />
             Previous
           </Button>
-          <span className="text-sm text-muted-foreground">
-            Page {currentPage} of {safeTotal}
+          <span className="text-meta text-muted-foreground">
+            {currentPage} / {safeTotal}
           </span>
           <Button
             variant="outline"

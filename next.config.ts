@@ -2,6 +2,10 @@ import type { NextConfig } from "next";
 import "./env";
 
 const nextConfig: NextConfig = {
+  // The section was renamed; keep old links and bookmarks working.
+  async redirects() {
+    return [{ source: "/browse/dramas", destination: "/browse/series", permanent: true }];
+  },
   images: {
     remotePatterns: [
       {

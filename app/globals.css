@@ -4,41 +4,38 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* ==========================================================================
+   Theme mapping — see DESIGN.md §2
+   ========================================================================== */
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-heading);
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Additions — DESIGN.md §2 "Semantic tokens" */
+  --color-brand: var(--brand);
+  --color-rating: var(--rating);
+
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-geist-sans);
+
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -46,85 +43,513 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
 }
+
+/* ==========================================================================
+   Shape + motion tokens — shared by every palette
+   ========================================================================== */
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.148 0.004 228.8);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.148 0.004 228.8);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.148 0.004 228.8);
-  --primary: oklch(0.5 0.134 242.749);
-  --primary-foreground: oklch(0.977 0.013 236.62);
-  --secondary: oklch(0.967 0.001 286.375);
-  --secondary-foreground: oklch(0.21 0.006 285.885);
-  --muted: oklch(0.963 0.002 197.1);
-  --muted-foreground: oklch(0.56 0.021 213.5);
-  --accent: oklch(0.963 0.002 197.1);
-  --accent-foreground: oklch(0.218 0.008 223.9);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.925 0.005 214.3);
-  --input: oklch(0.925 0.005 214.3);
-  --ring: oklch(0.723 0.014 214.4);
-  --chart-1: oklch(0.865 0.127 207.078);
-  --chart-2: oklch(0.715 0.143 215.221);
-  --chart-3: oklch(0.609 0.126 221.723);
-  --chart-4: oklch(0.52 0.105 223.128);
-  --chart-5: oklch(0.45 0.085 224.283);
-  --radius: 0.45rem;
-  --sidebar: oklch(0.987 0.002 197.1);
-  --sidebar-foreground: oklch(0.148 0.004 228.8);
-  --sidebar-primary: oklch(0.588 0.158 241.966);
-  --sidebar-primary-foreground: oklch(0.977 0.013 236.62);
-  --sidebar-accent: oklch(0.963 0.002 197.1);
-  --sidebar-accent-foreground: oklch(0.218 0.008 223.9);
-  --sidebar-border: oklch(0.925 0.005 214.3);
-  --sidebar-ring: oklch(0.723 0.014 214.4);
+  --radius: 0.7rem;
+
+  /* Motion. Built-in easings are too weak; never ease-in on UI. DESIGN.md §5 */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  --dur-press: 140ms;
+  --dur-fast: 180ms;
+  --dur-base: 220ms;
+  --dur-slow: 320ms;
 }
 
-.dark {
-  --background: oklch(0.148 0.004 228.8);
-  --foreground: oklch(0.987 0.002 197.1);
-  --card: oklch(0.218 0.008 223.9);
-  --card-foreground: oklch(0.987 0.002 197.1);
-  --popover: oklch(0.218 0.008 223.9);
-  --popover-foreground: oklch(0.987 0.002 197.1);
-  --primary: oklch(0.443 0.11 240.79);
-  --primary-foreground: oklch(0.977 0.013 236.62);
-  --secondary: oklch(0.274 0.006 286.033);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.275 0.011 216.9);
-  --muted-foreground: oklch(0.723 0.014 214.4);
-  --accent: oklch(0.275 0.011 216.9);
-  --accent-foreground: oklch(0.987 0.002 197.1);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.56 0.021 213.5);
-  --chart-1: oklch(0.865 0.127 207.078);
-  --chart-2: oklch(0.715 0.143 215.221);
-  --chart-3: oklch(0.609 0.126 221.723);
-  --chart-4: oklch(0.52 0.105 223.128);
-  --chart-5: oklch(0.45 0.085 224.283);
-  --sidebar: oklch(0.218 0.008 223.9);
-  --sidebar-foreground: oklch(0.987 0.002 197.1);
-  --sidebar-primary: oklch(0.685 0.169 237.323);
-  --sidebar-primary-foreground: oklch(0.293 0.066 243.157);
-  --sidebar-accent: oklch(0.275 0.011 216.9);
-  --sidebar-accent-foreground: oklch(0.987 0.002 197.1);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.56 0.021 213.5);
+/* ==========================================================================
+   Palettes. Order is load-bearing: each block defines the complete token set,
+   and the light+palette selectors are the most specific so they win.
+   Dark is the un-classed base, so the app is never briefly white.
+   ========================================================================== */
+
+/* --- Violet · dark (default) --- */
+:root {
+  color-scheme: dark;
+  --background: oklch(0.145 0.014 288);
+  --foreground: oklch(0.97 0.006 288);
+  --card: oklch(0.185 0.016 288);
+  --card-foreground: oklch(0.97 0.006 288);
+  --popover: oklch(0.205 0.017 288);
+  --popover-foreground: oklch(0.97 0.006 288);
+  --primary: oklch(0.7 0.16 292);
+  --primary-foreground: oklch(0.17 0.04 292);
+  --secondary: oklch(0.235 0.016 288);
+  --secondary-foreground: oklch(0.97 0.006 288);
+  --muted: oklch(0.245 0.016 288);
+  --muted-foreground: oklch(0.705 0.02 288);
+  --accent: oklch(0.265 0.02 288);
+  --accent-foreground: oklch(0.97 0.006 288);
+  --destructive: oklch(0.704 0.18 22);
+  --border: oklch(1 0 0 / 9%);
+  --input: oklch(1 0 0 / 13%);
+  --ring: oklch(0.7 0.16 292);
+  --brand: oklch(0.72 0.17 330);
+  --rating: oklch(0.82 0.14 82);
 }
+
+/* --- Coral · dark --- */
+:root[data-palette="coral"] {
+  color-scheme: dark;
+  --background: oklch(0.155 0.008 62);
+  --foreground: oklch(0.972 0.004 80);
+  --card: oklch(0.195 0.009 62);
+  --card-foreground: oklch(0.972 0.004 80);
+  --popover: oklch(0.215 0.01 62);
+  --popover-foreground: oklch(0.972 0.004 80);
+  --primary: oklch(0.755 0.145 34);
+  --primary-foreground: oklch(0.185 0.045 34);
+  --secondary: oklch(0.245 0.009 62);
+  --secondary-foreground: oklch(0.972 0.004 80);
+  --muted: oklch(0.255 0.009 62);
+  --muted-foreground: oklch(0.715 0.013 70);
+  --accent: oklch(0.278 0.012 62);
+  --accent-foreground: oklch(0.972 0.004 80);
+  /* hue 15, not 22 — a hue-34 primary next to a hue-22 red is confusable */
+  --destructive: oklch(0.68 0.2 15);
+  --border: oklch(1 0 0 / 9%);
+  --input: oklch(1 0 0 / 13%);
+  --ring: oklch(0.755 0.145 34);
+  --brand: oklch(0.76 0.11 158);
+  --rating: oklch(0.82 0.14 82);
+}
+
+/* --- Mint · dark --- */
+:root[data-palette="mint"] {
+  color-scheme: dark;
+  --background: oklch(0.145 0.012 200);
+  --foreground: oklch(0.97 0.005 200);
+  --card: oklch(0.185 0.013 200);
+  --card-foreground: oklch(0.97 0.005 200);
+  --popover: oklch(0.205 0.014 200);
+  --popover-foreground: oklch(0.97 0.005 200);
+  --primary: oklch(0.79 0.135 172);
+  --primary-foreground: oklch(0.18 0.04 172);
+  --secondary: oklch(0.235 0.013 200);
+  --secondary-foreground: oklch(0.97 0.005 200);
+  --muted: oklch(0.245 0.013 200);
+  --muted-foreground: oklch(0.705 0.017 200);
+  --accent: oklch(0.268 0.016 200);
+  --accent-foreground: oklch(0.97 0.005 200);
+  --destructive: oklch(0.704 0.19 22);
+  --border: oklch(1 0 0 / 9%);
+  --input: oklch(1 0 0 / 13%);
+  --ring: oklch(0.79 0.135 172);
+  --brand: oklch(0.72 0.16 300);
+  --rating: oklch(0.82 0.14 82);
+}
+
+/* --- Violet · light --- */
+:root.light {
+  color-scheme: light;
+  --background: oklch(0.995 0.002 288);
+  --foreground: oklch(0.17 0.014 288);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.17 0.014 288);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.17 0.014 288);
+  --primary: oklch(0.48 0.21 292);
+  --primary-foreground: oklch(0.99 0.005 292);
+  --secondary: oklch(0.965 0.006 288);
+  --secondary-foreground: oklch(0.225 0.014 288);
+  --muted: oklch(0.968 0.005 288);
+  --muted-foreground: oklch(0.52 0.018 288);
+  --accent: oklch(0.958 0.01 288);
+  --accent-foreground: oklch(0.225 0.014 288);
+  --destructive: oklch(0.577 0.23 27);
+  --border: oklch(0.915 0.006 288);
+  --input: oklch(0.915 0.006 288);
+  --ring: oklch(0.48 0.21 292);
+  --brand: oklch(0.56 0.2 330);
+  --rating: oklch(0.66 0.13 72);
+}
+
+/* --- Coral · light --- */
+:root.light[data-palette="coral"] {
+  color-scheme: light;
+  --background: oklch(0.995 0.003 80);
+  --foreground: oklch(0.175 0.01 62);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.175 0.01 62);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.175 0.01 62);
+  --primary: oklch(0.49 0.175 34);
+  --primary-foreground: oklch(0.99 0.006 80);
+  --secondary: oklch(0.966 0.006 80);
+  --secondary-foreground: oklch(0.23 0.01 62);
+  --muted: oklch(0.969 0.005 80);
+  --muted-foreground: oklch(0.525 0.014 62);
+  --accent: oklch(0.958 0.01 70);
+  --accent-foreground: oklch(0.23 0.01 62);
+  --destructive: oklch(0.54 0.215 15);
+  --border: oklch(0.917 0.006 75);
+  --input: oklch(0.917 0.006 75);
+  --ring: oklch(0.49 0.175 34);
+  --brand: oklch(0.52 0.11 158);
+  --rating: oklch(0.66 0.13 72);
+}
+
+/* --- Mint · light --- */
+:root.light[data-palette="mint"] {
+  color-scheme: light;
+  --background: oklch(0.995 0.002 200);
+  --foreground: oklch(0.168 0.012 200);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.168 0.012 200);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.168 0.012 200);
+  --primary: oklch(0.47 0.105 175);
+  --primary-foreground: oklch(0.99 0.004 175);
+  --secondary: oklch(0.964 0.006 200);
+  --secondary-foreground: oklch(0.225 0.012 200);
+  --muted: oklch(0.967 0.005 200);
+  --muted-foreground: oklch(0.518 0.016 200);
+  --accent: oklch(0.956 0.011 200);
+  --accent-foreground: oklch(0.225 0.012 200);
+  --destructive: oklch(0.577 0.23 27);
+  --border: oklch(0.914 0.007 200);
+  --input: oklch(0.914 0.007 200);
+  --ring: oklch(0.47 0.105 175);
+  --brand: oklch(0.52 0.18 300);
+  --rating: oklch(0.66 0.13 72);
+}
+
+/* ==========================================================================
+   Clerk — bind the prebuilt auth components to our tokens.
+
+   Clerk v7 exposes a CSS variable for every `appearance.variables` entry, so
+   this is a single mapping rather than a hardcoded colour table per theme:
+   var() is resolved against the final cascaded value of each token on :root,
+   so when a palette block redefines --primary, these follow automatically.
+   All six palette/mode combinations are covered by these 18 lines.
+   ========================================================================== */
+
+:root {
+  --clerk-color-primary: var(--primary);
+  --clerk-color-primary-foreground: var(--primary-foreground);
+  /* --card, not --background: Clerk's card should read as an elevated surface */
+  --clerk-color-background: var(--card);
+  --clerk-color-foreground: var(--foreground);
+  --clerk-color-muted: var(--muted);
+  --clerk-color-muted-foreground: var(--muted-foreground);
+  --clerk-color-neutral: var(--muted-foreground);
+  /* --input is our border token; Clerk wants an input *fill* */
+  --clerk-color-input: var(--muted);
+  --clerk-color-input-foreground: var(--foreground);
+  --clerk-color-border: var(--border);
+  --clerk-color-ring: var(--ring);
+  --clerk-color-danger: var(--destructive);
+  --clerk-color-shadow: oklch(0 0 0 / 30%);
+  --clerk-color-modal-backdrop: oklch(0 0 0 / 45%);
+  --clerk-border-radius: var(--radius);
+  --clerk-font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --clerk-font-family-buttons: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --clerk-font-family-mono: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+/* Clerk's base font size is 0.8125rem (13px) and its inputs render at exactly
+   that, so they hit the same iOS focus-zoom bug we fixed on our own inputs.
+   Raising the supported base variable on coarse pointers takes the inputs to
+   16px — and 13px base text is too small on a phone regardless. Deliberately
+   not a `.cl-rootBox input` selector: Clerk warns that targeting its internal
+   DOM structure breaks on component updates. */
+@media (pointer: coarse) {
+  :root {
+    --clerk-font-size: 1rem;
+  }
+}
+
+/* ==========================================================================
+   Base + mobile platform layer — DESIGN.md §6
+   ========================================================================== */
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
-  body {
-    @apply bg-background text-foreground;
-  }
+
   html {
     @apply font-sans;
+    /* The grey tap flash is the loudest "this is a website" tell */
+    -webkit-tap-highlight-color: transparent;
+    /* No font inflation in landscape */
+    -webkit-text-size-adjust: 100%;
+    /* Pull-to-refresh must not hijack scroll in an app shell */
+    overscroll-behavior: none;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    overscroll-behavior: none;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* iOS zooms into any input under 16px and never zooms back out.
+     Fix the cause — never disable zoom with maximum-scale. */
+  @media (pointer: coarse) {
+    input,
+    textarea,
+    select {
+      font-size: 16px;
+    }
+  }
+
+  /* Controls, not content. Body text must stay selectable. */
+  button,
+  a,
+  [role="button"],
+  [data-slot="tabs-trigger"] {
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+  }
+
+  ::selection {
+    background: color-mix(in oklch, var(--primary) 28%, transparent);
+  }
+}
+
+/* ==========================================================================
+   Typography — size-specific tracking, never one global value. DESIGN.md §3
+   ========================================================================== */
+
+@utility text-display {
+  font-size: clamp(2rem, 6vw, 3.25rem);
+  font-weight: 600;
+  line-height: 1.02;
+  letter-spacing: -0.035em;
+}
+
+@utility text-title {
+  font-size: 1.75rem;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+}
+
+@utility text-section {
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.015em;
+}
+
+/* Numeric metadata in mono is the cheapest move that reads as "designed" */
+@utility text-meta {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: 0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ==========================================================================
+   Surfaces
+   ========================================================================== */
+
+/* Translucent chrome with content scrolling underneath. Scroll-edge, not a
+   permanent divider: the border and shadow only appear once content is under it. */
+@utility chrome-layer {
+  background: color-mix(in oklch, var(--background) 72%, transparent);
+  border-bottom: 1px solid transparent;
+  transition:
+    border-color var(--dur-base) var(--ease-out),
+    box-shadow var(--dur-base) var(--ease-out),
+    background-color var(--dur-base) var(--ease-out);
+}
+
+@supports (backdrop-filter: blur(1px)) {
+  .chrome-layer {
+    backdrop-filter: blur(20px) saturate(180%);
+  }
+}
+
+.chrome-layer[data-scrolled="true"] {
+  border-bottom-color: var(--border);
+  box-shadow: 0 1px 12px -6px oklch(0 0 0 / 40%);
+}
+
+/* Horizontal rails (cast, chips). The browser keeps vertical panning;
+   scroll must not chain out to page back-navigation. */
+@utility rail {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  overscroll-behavior-x: contain;
+  touch-action: pan-x pan-y;
+  scrollbar-width: none;
+}
+
+.rail::-webkit-scrollbar {
+  display: none;
+}
+
+.rail > * {
+  scroll-snap-align: start;
+}
+
+/* ==========================================================================
+   Poster cards — hover gating written explicitly so it is verifiable.
+   DESIGN.md §5 rows 1 and 2.
+   ========================================================================== */
+
+.poster-frame {
+  position: relative;
+  aspect-ratio: 2 / 3;
+  overflow: hidden;
+  border-radius: var(--radius-xl);
+  background: var(--muted);
+  box-shadow: 0 1px 2px oklch(0 0 0 / 12%);
+  transition: transform var(--dur-base) var(--ease-out);
+  transform: translateZ(0);
+}
+
+.poster-frame::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1px oklch(1 0 0 / 8%);
+  pointer-events: none;
+}
+
+/* Touch has no hover, so gate it. :active below covers every input type. */
+@media (hover: hover) and (pointer: fine) {
+  .poster-card:hover .poster-frame {
+    transform: scale(1.03);
+  }
+}
+
+.poster-card:active .poster-frame {
+  transform: scale(0.985);
+  transition-duration: var(--dur-press);
+}
+
+/* Hover-reveal, but visible by default on touch — a control hidden behind
+   hover is simply unreachable on a phone. */
+.card-reveal {
+  opacity: 1;
+  transition: opacity var(--dur-fast) var(--ease-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .card-reveal {
+    opacity: 0;
+  }
+
+  .poster-card:hover .card-reveal,
+  .poster-card:focus-within .card-reveal,
+  .reveal-host:hover .card-reveal,
+  .reveal-host:focus-within .card-reveal {
+    opacity: 1;
+  }
+}
+
+/* Bridges the pop-in when the image decodes */
+.poster-img {
+  opacity: 0;
+  transform: scale(1.02);
+  transition:
+    opacity var(--dur-base) var(--ease-out),
+    transform var(--dur-base) var(--ease-out);
+}
+
+.poster-img[data-loaded="true"] {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* ==========================================================================
+   List-row exit — transition, not keyframes, so rapid deletes retarget
+   instead of restarting from zero. DESIGN.md §5 row 4.
+   ========================================================================== */
+
+.row-item {
+  transition:
+    opacity var(--dur-base) var(--ease-out),
+    transform var(--dur-base) var(--ease-out);
+}
+
+.row-item[data-removing="true"] {
+  opacity: 0;
+  transform: translateX(-8px);
+  pointer-events: none;
+}
+
+/* ==========================================================================
+   Entrances. Rare surfaces only — this is the delight budget.
+   ========================================================================== */
+
+@utility enter-fade-up {
+  transition:
+    opacity var(--dur-slow) var(--ease-out),
+    transform var(--dur-slow) var(--ease-out);
+
+  @starting-style {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+/* Scoped, time-boxed colour crossfade on theme change — never an abrupt
+   brightness jump. Applied by ThemeProvider for 220ms, then removed. */
+.theme-fade,
+.theme-fade *,
+.theme-fade *::before,
+.theme-fade *::after {
+  transition:
+    background-color var(--dur-base) var(--ease-out),
+    border-color var(--dur-base) var(--ease-out),
+    color var(--dur-base) var(--ease-out),
+    fill var(--dur-base) var(--ease-out) !important;
+}
+
+/* ==========================================================================
+   Accessibility — gentler, not zero. DESIGN.md §5.
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .poster-frame,
+  .poster-card:hover .poster-frame,
+  .poster-card:active .poster-frame {
+    transform: none !important;
+  }
+
+  .poster-img {
+    transform: none !important;
+  }
+
+  .row-item[data-removing="true"] {
+    transform: none !important;
+  }
+
+  .enter-fade-up {
+    @starting-style {
+      transform: none;
+    }
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .chrome-layer {
+    background: var(--background);
+    backdrop-filter: none;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .chrome-layer {
+    background: var(--background);
+    border-bottom-color: var(--foreground);
   }
 }
