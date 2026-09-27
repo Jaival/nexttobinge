@@ -50,7 +50,7 @@ cp .env.example .env.local
 | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | [Clerk dashboard](https://clerk.com) → API Keys |
 | `CLERK_SECRET_KEY` | [Clerk dashboard](https://clerk.com) → API Keys |
 | `CLERK_WEBHOOK_SECRET` | [Clerk dashboard](https://clerk.com) → Webhooks → your endpoint → Signing secret |
-| `DATABASE_URL` | [Supabase](https://supabase.com) → Project Settings → Database → Connection string (Transaction mode) |
+| `DATABASE_URL` | [Supabase](https://supabase.com) → Project Settings → Database → Connection string (Transaction mode, port `6543`, host `…pooler.supabase.com`). Not the direct `db.<ref>.supabase.co` string: that host is IPv6-only and fails with `ENOTFOUND` on IPv4 networks and on Vercel |
 | `TMDB_API_KEY` | [TMDB](https://www.themoviedb.org/settings/api) → API → Developer |
 | `SITE_URL` | Optional. Your public origin, e.g. `https://nexttobinge.com`. Used for canonical URLs, the sitemap and link previews. Defaults to Vercel's production URL, then `http://localhost:3000` |
 | `GOOGLE_SITE_VERIFICATION` | Optional. Search Console → Add property → HTML tag method → the `content` value. Not needed if you verify with a DNS record |
