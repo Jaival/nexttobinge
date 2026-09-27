@@ -105,7 +105,7 @@ export default async function AnimeDetailPage({ params }: PageProps) {
             <AddToWatchlistButton item={cardItem} />
             {/* AniList trailers can also be on Dailymotion; only YouTube is embedded. */}
             {anime.trailer?.site === "youtube" && (
-              <TrailerButton videoKey={anime.trailer.id} title={title} />
+              <TrailerButton videoKey={anime.trailer.id} title={title} type="anime" />
             )}
           </>
         }

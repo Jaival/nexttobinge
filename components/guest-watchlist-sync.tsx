@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { toast } from "sonner";
 import { removeGuestItems, useGuestWatchlist } from "@/lib/guest-watchlist";
+import { track } from "@/lib/analytics";
 
 /**
  * Renders nothing. As soon as a visitor with a guest list is signed in, it
@@ -37,6 +38,7 @@ export function GuestWatchlistSync() {
         // stays for the next pass.
         removeGuestItems(sent);
         if (imported > 0) {
+          track("Guest list imported", { count: imported });
           toast.success(`Moved ${imported} saved title${imported === 1 ? "" : "s"} into "${name}"`);
         }
         router.refresh();

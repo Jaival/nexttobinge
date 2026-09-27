@@ -3,8 +3,11 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { ClerkProvider } from "@clerk/nextjs";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { ThemeProvider, PALETTE_SCRIPT } from "@/components/theme-provider";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/seo";
+import { env } from "@/env";
 
 // One family for UI, mono for numeric metadata. See DESIGN.md §3.
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
@@ -28,6 +31,10 @@ export const metadata: Metadata = {
     locale: "en_US",
   },
   twitter: { card: "summary_large_image" },
+  // Search Console ownership check (the HTML-tag method). Omitted when unset.
+  verification: env.GOOGLE_SITE_VERIFICATION
+    ? { google: env.GOOGLE_SITE_VERIFICATION }
+    : undefined,
 };
 
 export const viewport: Viewport = {
@@ -63,6 +70,10 @@ export default function RootLayout({
         </head>
         <body className="min-h-full flex flex-col">
           <ThemeProvider>{children}</ThemeProvider>
+          {/* Page views and Core Web Vitals from real visitors. Both are
+              cookieless and only report on Vercel deployments. */}
+          <Analytics />
+          <SpeedInsights />
         </body>
       </html>
     </ClerkProvider>

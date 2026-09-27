@@ -3,6 +3,7 @@
 import { Share2Icon } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { track } from "@/lib/analytics";
 
 interface ShareLinkButtonProps {
   /** Site-relative path, e.g. /lists/<id>. */
@@ -11,6 +12,8 @@ interface ShareLinkButtonProps {
   label?: string;
   variant?: React.ComponentProps<typeof Button>["variant"];
   size?: React.ComponentProps<typeof Button>["size"];
+  /** For analytics: the owner sharing their own list, or a visitor passing it on. */
+  owner?: boolean;
 }
 
 /**
@@ -24,6 +27,7 @@ export function ShareLinkButton({
   label = "Share",
   variant = "outline",
   size = "sm",
+  owner = false,
 }: ShareLinkButtonProps) {
   async function share() {
     // The current origin, not a configured one, so a preview deployment
@@ -34,6 +38,7 @@ export function ShareLinkButton({
     if (touch && typeof navigator.share === "function") {
       try {
         await navigator.share({ title, url });
+        track("List shared", { method: "share-sheet", owner });
         return;
       } catch (error) {
         // Closing the share sheet rejects with AbortError. That's a choice,
@@ -44,6 +49,7 @@ export function ShareLinkButton({
 
     try {
       await navigator.clipboard.writeText(url);
+      track("List shared", { method: "clipboard", owner });
       toast.success("Link copied");
     } catch {
       // The clipboard API needs a secure context and permission.

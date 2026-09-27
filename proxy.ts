@@ -25,6 +25,10 @@ const isPublicRoute = createRouteMatcher([
   "/robots.txt",
   "/sitemap.xml",
   "/opengraph-image(.*)",
+  // Uptime monitors and Sentry's error tunnel (see next.config.ts). Neither
+  // ever has a session.
+  "/api/health",
+  "/monitoring(.*)",
 ]);
 
 const isApiRoute = createRouteMatcher(["/api(.*)"]);

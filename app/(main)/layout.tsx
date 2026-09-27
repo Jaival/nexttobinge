@@ -1,4 +1,5 @@
 import { Navbar } from "@/components/navbar";
+import { SiteFooter } from "@/components/site-footer";
 import { Toaster } from "@/components/ui/sonner";
 import { GuestWatchlistSync } from "@/components/guest-watchlist-sync";
 
@@ -12,6 +13,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       >
         {children}
       </main>
+      <SiteFooter />
       <Toaster position="bottom-right" />
       <GuestWatchlistSync />
     </>

@@ -4,11 +4,14 @@ import { useState } from "react";
 import { PlayIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import type { MediaType } from "@/components/media-card";
+import { track } from "@/lib/analytics";
 
 interface TrailerButtonProps {
   /** YouTube video id. */
   videoKey: string;
   title: string;
+  type: MediaType;
 }
 
 /**
@@ -17,12 +20,19 @@ interface TrailerButtonProps {
  * play never pay for it. youtube-nocookie.com doesn't set tracking cookies
  * until playback starts.
  */
-export function TrailerButton({ videoKey, title }: TrailerButtonProps) {
+export function TrailerButton({ videoKey, title, type }: TrailerButtonProps) {
   const [open, setOpen] = useState(false);
 
   return (
     <>
-      <Button variant="secondary" size="sm" onClick={() => setOpen(true)}>
+      <Button
+        variant="secondary"
+        size="sm"
+        onClick={() => {
+          setOpen(true);
+          track("Trailer played", { type });
+        }}
+      >
         <PlayIcon data-icon="inline-start" />
         Play trailer
       </Button>

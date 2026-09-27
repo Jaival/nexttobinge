@@ -18,6 +18,7 @@ import type { MediaCardItem } from "@/components/media-card";
 import type { Watchlist } from "@/lib/db/schema";
 import { addGuestItem } from "@/lib/guest-watchlist";
 import { GUEST_LIMIT } from "@/lib/guest-watchlist-rules";
+import { track } from "@/lib/analytics";
 
 interface WatchlistDialogProps {
   item: MediaCardItem | null;
@@ -44,6 +45,7 @@ export function useAddToWatchlist() {
     const result = addGuestItem(item);
     const signUp = { label: "Sign up", onClick: () => clerk.openSignUp() };
     if (result === "added") {
+      track("Title saved", { as: "guest", type: item.type });
       toast.success(`Saved "${item.title}"`, {
         description: "It's kept in this browser. Sign up to keep it everywhere.",
         action: signUp,
@@ -124,6 +126,7 @@ export function WatchlistDialog({ item, open, onOpenChange }: WatchlistDialogPro
         }
         throw new Error();
       }
+      track("Title saved", { as: "account", type: item.type });
       const wl = watchlists.find((w) => w.id === watchlistId);
       toast.success(`Added to "${wl?.name ?? "watchlist"}"`);
       onOpenChange(false);

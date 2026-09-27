@@ -110,7 +110,7 @@ export default async function MovieDetailPage({ params }: PageProps) {
         action={
           <>
             <AddToWatchlistButton item={cardItem} />
-            {trailer && <TrailerButton videoKey={trailer.key} title={movie.title} />}
+            {trailer && <TrailerButton videoKey={trailer.key} title={movie.title} type="movie" />}
           </>
         }
       />
