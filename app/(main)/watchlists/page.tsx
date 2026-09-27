@@ -1,21 +1,23 @@
 import { auth } from "@clerk/nextjs/server";
-import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { watchlists, watchlistItems } from "@/lib/db/schema";
 import { eq, desc, sql, inArray } from "drizzle-orm";
 import { WatchlistsClient } from "./watchlists-client";
+import { GuestWatchlist } from "./guest-watchlist";
 
 const PREVIEW_COUNT = 4;
 
 export default async function WatchlistsPage() {
   const { userId } = await auth();
-  if (!userId) redirect("/sign-in");
+  // Signed-out visitors see what they've saved in this browser.
+  if (!userId) return <GuestWatchlist />;
 
   const rows = await db
     .select({
       id: watchlists.id,
       name: watchlists.name,
       description: watchlists.description,
+      isPublic: watchlists.isPublic,
       createdAt: watchlists.createdAt,
       itemCount: sql<number>`count(${watchlistItems.id})::int`,
     })

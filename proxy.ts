@@ -1,17 +1,30 @@
 import { NextResponse } from "next/server";
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 
-// Everything a visitor can look at is public; only watchlists (pages and API)
-// need an account. Detail pages and search are included because a public
+// Everything a visitor can look at is public; only saved watchlists (pages and
+// API) need an account. Detail pages and search are included because a public
 // browse grid whose cards lead to a sign-in wall would be a dead end.
 const isPublicRoute = createRouteMatcher([
   "/",
   "/browse(.*)",
   "/media(.*)",
   "/search(.*)",
+  "/tonight",
+  "/collections(.*)",
+  // Shared watchlists and their preview images. The page itself returns 404
+  // unless the owner made the list public; proxy.ts only decides who needs
+  // to be signed in, not who may see what.
+  "/lists(.*)",
+  // Exactly /watchlists: signed-out visitors see their guest list there.
+  // /watchlists/<id> stays protected.
+  "/watchlists",
   "/sign-in(.*)",
   "/sign-up(.*)",
   "/api/webhooks(.*)",
+  // Fetched by crawlers and link-preview bots, which never have a session.
+  "/robots.txt",
+  "/sitemap.xml",
+  "/opengraph-image(.*)",
 ]);
 
 const isApiRoute = createRouteMatcher(["/api(.*)"]);

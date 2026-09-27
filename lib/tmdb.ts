@@ -63,9 +63,47 @@ export interface TMDBGenre {
   name: string;
 }
 
+export interface TMDBVideo {
+  key: string;
+  site: string;
+  type: string;
+  official: boolean;
+  name: string;
+}
+
+export interface TMDBWatchProvider {
+  provider_id: number;
+  provider_name: string;
+  logo_path: string;
+  display_priority: number;
+}
+
+/** One country's entry in /watch/providers. The data comes from JustWatch. */
+export interface TMDBCountryProviders {
+  link: string;
+  flatrate?: TMDBWatchProvider[];
+  free?: TMDBWatchProvider[];
+  ads?: TMDBWatchProvider[];
+  rent?: TMDBWatchProvider[];
+  buy?: TMDBWatchProvider[];
+}
+
+/** Keyed by ISO 3166-1 country code: "US", "IN", "GB"… */
+export type TMDBWatchProviders = Record<string, TMDBCountryProviders>;
+
+/** Extra blocks the detail requests ask for with append_to_response. */
+interface DetailExtras {
+  videos?: { results: TMDBVideo[] };
+  "watch/providers"?: { results: TMDBWatchProviders };
+}
+
 export function posterUrl(path: string | null, size: "w185" | "w342" | "w500" | "w780" | "original" = "w342") {
   if (!path) return null;
   return `${TMDB_IMAGE_BASE}/${size}${path}`;
+}
+
+export function logoUrl(path: string) {
+  return `${TMDB_IMAGE_BASE}/w92${path}`;
 }
 
 export function backdropUrl(path: string | null, size: "w780" | "w1280" | "original" = "w1280") {
@@ -103,12 +141,28 @@ export async function searchTV(query: string, page = "1") {
   return tmdbFetch<TMDBPageResult<TMDBTVShow>>("/search/tv", { query, page });
 }
 
+// append_to_response folds the trailer and streaming lookups into the details
+// request: one round trip and one cache entry instead of three. The details
+// fetch is also what generateMetadata calls, so the extras come along for free.
+const DETAIL_EXTRAS = { append_to_response: "videos,watch/providers" };
+
 export async function getMovieDetails(id: number) {
-  return tmdbFetch<TMDBMovie>(`/movie/${id}`);
+  return tmdbFetch<TMDBMovie & DetailExtras>(`/movie/${id}`, DETAIL_EXTRAS);
 }
 
 export async function getTVDetails(id: number) {
-  return tmdbFetch<TMDBTVShow>(`/tv/${id}`);
+  return tmdbFetch<TMDBTVShow & DetailExtras>(`/tv/${id}`, DETAIL_EXTRAS);
+}
+
+/** The best YouTube trailer, falling back to a teaser. TMDB lists clips and featurettes too. */
+export function pickTrailer(videos: TMDBVideo[] = []): TMDBVideo | null {
+  const youtube = videos.filter((v) => v.site === "YouTube");
+  const rank = (v: TMDBVideo) =>
+    (v.type === "Trailer" ? 0 : v.type === "Teaser" ? 2 : 4) + (v.official ? 0 : 1);
+  const best = youtube
+    .filter((v) => v.type === "Trailer" || v.type === "Teaser")
+    .sort((a, b) => rank(a) - rank(b))[0];
+  return best ?? null;
 }
 
 export async function getMovieGenres() {
@@ -139,4 +193,12 @@ export async function getSimilarMovies(id: number) {
 
 export async function getSimilarTV(id: number) {
   return tmdbFetch<TMDBPageResult<TMDBTVShow>>(`/tv/${id}/similar`);
+}
+
+export async function getMovieRecommendations(id: number) {
+  return tmdbFetch<TMDBPageResult<TMDBMovie>>(`/movie/${id}/recommendations`);
+}
+
+export async function getTVRecommendations(id: number) {
+  return tmdbFetch<TMDBPageResult<TMDBTVShow>>(`/tv/${id}/recommendations`);
 }

@@ -1,54 +1,47 @@
+import type { Metadata } from "next";
 import Link from "next/link";
-import { FilmIcon, TvIcon, SparklesIcon, ArrowRightIcon } from "lucide-react";
-import { MediaGrid } from "@/components/media-grid";
 import {
-  getTrendingMovies,
-  getTrendingTV,
-  posterUrl,
-  type TMDBMovie,
-  type TMDBTVShow,
-} from "@/lib/tmdb";
-import { getTrendingAnime, getAnimeTitle, type AniListMedia } from "@/lib/anilist";
-import type { MediaCardItem } from "@/components/media-card";
+  FilmIcon,
+  TvIcon,
+  SparklesIcon,
+  ArrowRightIcon,
+  DicesIcon,
+  LibraryIcon,
+} from "lucide-react";
+import { MediaGrid } from "@/components/media-grid";
+import { Recommendations } from "@/components/recommendations";
+import { getTrendingMovies, getTrendingTV } from "@/lib/tmdb";
+import { getTrendingAnime } from "@/lib/anilist";
+import { animeToCard, movieToCard, tvToCard } from "@/lib/media-cards";
+import { JsonLd } from "@/components/json-ld";
+import { SITE_NAME, SITE_URL } from "@/lib/seo";
 
-function movieToCard(m: TMDBMovie): MediaCardItem {
-  return {
-    id: m.id,
-    title: m.title,
-    posterUrl: posterUrl(m.poster_path),
-    year: m.release_date ? m.release_date.slice(0, 4) : null,
-    rating: m.vote_average,
-    type: "movie",
-  };
-}
+// Canonical lives here, not in the root layout, which every page inherits.
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+};
 
-function tvToCard(t: TMDBTVShow): MediaCardItem {
-  return {
-    id: t.id,
-    title: t.name,
-    posterUrl: posterUrl(t.poster_path),
-    year: t.first_air_date ? t.first_air_date.slice(0, 4) : null,
-    rating: t.vote_average,
-    type: "tv",
-  };
-}
-
-function animeToCard(a: AniListMedia): MediaCardItem {
-  return {
-    id: a.id,
-    title: getAnimeTitle(a),
-    posterUrl: a.coverImage.extraLarge,
-    year: a.seasonYear ? String(a.seasonYear) : null,
-    rating: a.averageScore,
-    type: "anime",
-  };
-}
+// Tells Google the site's name for the "site name" line above search results.
+const WEBSITE_JSON_LD = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: SITE_NAME,
+  url: `${SITE_URL}/`,
+};
 
 const SECTIONS = [
-  { id: "movies", title: "Trending movies", href: "/browse/movies", icon: FilmIcon },
-  { id: "series", title: "Trending series", href: "/browse/series", icon: TvIcon },
-  { id: "anime", title: "Trending anime", href: "/browse/anime", icon: SparklesIcon },
+  { id: "movies", title: "Trending movies", href: "/browse/movies" },
+  { id: "series", title: "Trending series", href: "/browse/series" },
+  { id: "anime", title: "Trending anime", href: "/browse/anime" },
 ] as const;
+
+const HERO_LINKS = [
+  { href: "/browse/movies", icon: FilmIcon, label: "Movies" },
+  { href: "/browse/series", icon: TvIcon, label: "Series" },
+  { href: "/browse/anime", icon: SparklesIcon, label: "Anime" },
+  { href: "/tonight", icon: DicesIcon, label: "Pick for me" },
+  { href: "/collections", icon: LibraryIcon, label: "Collections" },
+];
 
 export default async function HomePage() {
   const [moviesData, seriesData, animeData] = await Promise.all([
@@ -65,6 +58,7 @@ export default async function HomePage() {
 
   return (
     <div className="flex flex-col gap-14">
+      <JsonLd data={WEBSITE_JSON_LD} />
       {/* One focal moment, then straight into content. DESIGN.md §7 */}
       <section className="relative isolate -mx-4 overflow-hidden px-4 pb-2 pt-8 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
         <div
@@ -80,18 +74,20 @@ export default async function HomePage() {
           Trending movies, series and anime in one place. Save anything to a personal watchlist.
         </p>
         <div className="rail mt-6 gap-2">
-          {SECTIONS.map(({ id, href, icon: Icon, title }) => (
+          {HERO_LINKS.map(({ href, icon: Icon, label }) => (
             <Link
-              key={id}
+              key={href}
               href={href}
               className="flex shrink-0 items-center gap-1.5 rounded-full bg-muted px-3.5 py-1.5 text-sm font-medium transition-colors duration-150 hover:bg-accent"
             >
               <Icon className="size-3.5 text-primary" />
-              {title.replace("Trending ", "")}
+              {label}
             </Link>
           ))}
         </div>
       </section>
+
+      <Recommendations />
 
       {SECTIONS.map(({ id, title, href }) => (
         <section key={id} className="flex flex-col gap-4">

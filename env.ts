@@ -7,6 +7,9 @@ export const env = createEnv({
     CLERK_SECRET_KEY: z.string().min(1),
     CLERK_WEBHOOK_SECRET: z.string().min(1),
     TMDB_API_KEY: z.string().min(1),
+    // Public origin, e.g. https://nexttobinge.com. Optional: lib/site.ts falls
+    // back to Vercel's production URL, then localhost.
+    SITE_URL: z.url().optional(),
   },
   client: {
     NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: z.string().min(1),
@@ -16,6 +19,7 @@ export const env = createEnv({
     CLERK_SECRET_KEY: process.env.CLERK_SECRET_KEY,
     CLERK_WEBHOOK_SECRET: process.env.CLERK_WEBHOOK_SECRET,
     TMDB_API_KEY: process.env.TMDB_API_KEY,
+    SITE_URL: process.env.SITE_URL,
     NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
   },
 });

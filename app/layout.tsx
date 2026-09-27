@@ -4,14 +4,30 @@ import "./globals.css";
 import { cn } from "@/lib/utils";
 import { ClerkProvider } from "@clerk/nextjs";
 import { ThemeProvider, PALETTE_SCRIPT } from "@/components/theme-provider";
+import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/seo";
 
 // One family for UI, mono for numeric metadata. See DESIGN.md §3.
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
+// Defaults every page inherits. Pages override title/description; the template
+// appends the brand so each tab and search result reads "Dune (2021) · NextToBinge".
+// No canonical here: children inherit it, and every page would claim to be "/".
 export const metadata: Metadata = {
-  title: "NextToBinge — Discover Movies, Series & Anime",
-  description: "Find movies, series, and anime to watch. Save them in personal watchlists.",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: `${SITE_NAME} — Discover Movies, Series & Anime`,
+    template: `%s · ${SITE_NAME}`,
+  },
+  description: SITE_DESCRIPTION,
+  applicationName: SITE_NAME,
+  // The image comes from app/opengraph-image.tsx.
+  openGraph: {
+    type: "website",
+    siteName: SITE_NAME,
+    locale: "en_US",
+  },
+  twitter: { card: "summary_large_image" },
 };
 
 export const viewport: Viewport = {

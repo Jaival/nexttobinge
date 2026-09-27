@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { watchlists, watchlistItems } from "@/lib/db/schema";
 import { and, eq } from "drizzle-orm";
+import { isUuid } from "@/lib/utils";
 
 export async function PATCH(
   req: Request,
@@ -12,13 +13,16 @@ export async function PATCH(
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id, itemId } = await params;
+  if (!isUuid(id) || !isUuid(itemId)) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
 
   const wl = await db.query.watchlists.findFirst({
     where: and(eq(watchlists.id, id), eq(watchlists.userId, userId)),
   });
   if (!wl) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const body = await req.json();
+  const body = await req.json().catch(() => ({}));
   const status = body.status as "plan" | "watching" | "watched";
   if (!["plan", "watching", "watched"].includes(status)) {
     return NextResponse.json({ error: "Invalid status" }, { status: 400 });
