@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { SearchIcon } from "lucide-react";
 import { searchMovies, searchTV, posterUrl } from "@/lib/tmdb";
 import { searchAnime, getAnimeTitle } from "@/lib/anilist";
@@ -9,6 +10,18 @@ import type { MediaCardItem } from "@/components/media-card";
 
 interface PageProps {
   searchParams: Promise<{ q?: string }>;
+}
+
+// Result pages are thin, near-duplicate, and there are infinitely many of them,
+// so they stay out of the index. "follow" still lets crawlers reach the titles
+// they link to. This is a meta tag rather than a robots.txt rule on purpose:
+// a crawler blocked by robots.txt never sees the noindex.
+export async function generateMetadata({ searchParams }: PageProps): Promise<Metadata> {
+  const query = (await searchParams).q?.trim();
+  return {
+    title: query ? `Search: ${query}` : "Search",
+    robots: { index: false, follow: true },
+  };
 }
 
 export default async function SearchPage({ searchParams }: PageProps) {

@@ -8,13 +8,23 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Logo } from "@/components/logo";
 import { ThemeControls } from "@/components/theme-controls";
-import { SearchIcon, TvIcon, FilmIcon, SparklesIcon, ListIcon } from "lucide-react";
+import {
+  SearchIcon,
+  TvIcon,
+  FilmIcon,
+  SparklesIcon,
+  ListIcon,
+  LibraryIcon,
+  DicesIcon,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 
 const NAV_LINKS = [
   { href: "/browse/movies", label: "Movies", icon: FilmIcon },
   { href: "/browse/series", label: "Series", icon: TvIcon },
   { href: "/browse/anime", label: "Anime", icon: SparklesIcon },
+  { href: "/collections", label: "Collections", icon: LibraryIcon },
+  { href: "/tonight", label: "Tonight", icon: DicesIcon },
   { href: "/watchlists", label: "Watchlists", icon: ListIcon },
 ];
 
@@ -50,7 +60,8 @@ export function Navbar() {
           <Logo wordmarkClassName="hidden sm:block" />
         </Link>
 
-        <nav className="ml-2 hidden items-center gap-0.5 md:flex">
+        {/* Six links plus search need about 1000px, so tablets get the rail below. */}
+        <nav className="ml-2 hidden items-center gap-0.5 lg:flex">
           {NAV_LINKS.map(({ href, label }) => {
             const active = pathname?.startsWith(href);
             return (
@@ -111,7 +122,7 @@ export function Navbar() {
         </Show>
       </div>
 
-      <nav className="rail gap-1 px-4 pb-2 sm:px-6 md:hidden">
+      <nav className="rail gap-1 px-4 pb-2 sm:px-6 lg:hidden">
         {NAV_LINKS.map(({ href, label, icon: Icon }) => {
           const active = pathname?.startsWith(href);
           return (

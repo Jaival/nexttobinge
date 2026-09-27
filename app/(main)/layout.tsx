@@ -1,5 +1,6 @@
 import { Navbar } from "@/components/navbar";
 import { Toaster } from "@/components/ui/sonner";
+import { GuestWatchlistSync } from "@/components/guest-watchlist-sync";
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -12,6 +13,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         {children}
       </main>
       <Toaster position="bottom-right" />
+      <GuestWatchlistSync />
     </>
   );
 }

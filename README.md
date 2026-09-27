@@ -51,16 +51,20 @@ cp .env.local.example .env.local
 | `CLERK_SECRET_KEY` | [Clerk dashboard](https://clerk.com) → API Keys |
 | `DATABASE_URL` | [Supabase](https://supabase.com) → Project Settings → Database → Connection string (Transaction mode) |
 | `TMDB_API_KEY` | [TMDB](https://www.themoviedb.org/settings/api) → API → Developer |
+| `SITE_URL` | Optional. Your public origin, e.g. `https://nexttobinge.com`. Used for canonical URLs, the sitemap and link previews. Defaults to Vercel's production URL, then `http://localhost:3000` |
 
 AniList requires no API key.
 
 ### 3. Set up the database
 
-Run the migration SQL in your Supabase project's **SQL Editor**:
+Run the migration SQL in your Supabase project's **SQL Editor**, one file at a time, in order:
 
 ```bash
 # Contents are in:
 lib/db/migrations/0000_initial.sql
+lib/db/migrations/0001_users.sql
+lib/db/migrations/0002_unique_watchlist_items.sql
+lib/db/migrations/0003_public_watchlists.sql
 ```
 
 Or if you prefer to generate and push via Drizzle Kit (requires `DATABASE_URL` in your shell):

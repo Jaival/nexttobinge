@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeftIcon, Trash2Icon, StarIcon, ListIcon } from "lucide-react";
+import { ArrowLeftIcon, Trash2Icon, StarIcon, ListIcon, Share2Icon, GlobeIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -16,6 +16,7 @@ import { EmptyState } from "@/components/empty-state";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { ShareDialog } from "./share-dialog";
 import type { Watchlist, WatchlistItem } from "@/lib/db/schema";
 
 const STATUS_LABELS = {
@@ -49,6 +50,8 @@ export function WatchlistDetailClient({ watchlist, initialItems }: WatchlistDeta
   const [filter, setFilter] = useState<Filter>("all");
   const [removeTarget, setRemoveTarget] = useState<WatchlistItem | null>(null);
   const [removingId, setRemovingId] = useState<string | null>(null);
+  const [isPublic, setIsPublic] = useState(watchlist.isPublic);
+  const [shareOpen, setShareOpen] = useState(false);
 
   async function handleStatusChange(item: WatchlistItem, status: "plan" | "watching" | "watched") {
     // Optimistic: the select has already moved, so reverting on failure is
@@ -104,12 +107,25 @@ export function WatchlistDetailClient({ watchlist, initialItems }: WatchlistDeta
             <ArrowLeftIcon />
           </Link>
         </Button>
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <h1 className="text-title truncate">{watchlist.name}</h1>
-          <p className="text-meta mt-1 text-muted-foreground">
+          <p className="text-meta mt-1 flex items-center gap-2 text-muted-foreground">
             {items.length} item{items.length !== 1 ? "s" : ""}
+            {isPublic && (
+              <>
+                <span aria-hidden>·</span>
+                <span className="flex items-center gap-1">
+                  <GlobeIcon className="size-3" />
+                  Public
+                </span>
+              </>
+            )}
           </p>
         </div>
+        <Button variant="outline" size="sm" className="mt-1 shrink-0" onClick={() => setShareOpen(true)}>
+          <Share2Icon data-icon="inline-start" />
+          Share
+        </Button>
       </div>
 
       <div className="rail gap-2">
@@ -242,6 +258,15 @@ export function WatchlistDetailClient({ watchlist, initialItems }: WatchlistDeta
           })}
         </ul>
       )}
+
+      <ShareDialog
+        open={shareOpen}
+        onOpenChange={setShareOpen}
+        watchlistId={watchlist.id}
+        name={watchlist.name}
+        isPublic={isPublic}
+        onIsPublicChange={setIsPublic}
+      />
 
       <ConfirmDialog
         open={!!removeTarget}

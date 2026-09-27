@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { MediaCard, MediaCardSkeleton, type MediaCardItem } from "@/components/media-card";
-import { WatchlistDialog, useRequireSignIn } from "@/components/watchlist-dialog";
+import { WatchlistDialog, useAddToWatchlist } from "@/components/watchlist-dialog";
 import { EmptyState } from "@/components/empty-state";
 import { SearchXIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface MediaGridProps {
   items: MediaCardItem[];
@@ -12,19 +13,27 @@ interface MediaGridProps {
   skeletonCount?: number;
   /** Set on mixed grids (search, the "All" tab) so each card labels its type. */
   showType?: boolean;
+  /** Overrides the column layout, e.g. for a row of three large picks. */
+  className?: string;
 }
 
 // Captions need more room below than posters need beside them.
 const GRID =
   "grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6";
 
-export function MediaGrid({ items, loading, skeletonCount = 18, showType }: MediaGridProps) {
+export function MediaGrid({
+  items,
+  loading,
+  skeletonCount = 18,
+  showType,
+  className,
+}: MediaGridProps) {
   const [selected, setSelected] = useState<MediaCardItem | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const requireSignIn = useRequireSignIn();
+  const addToWatchlist = useAddToWatchlist();
 
   function handleAddToWatchlist(item: MediaCardItem) {
-    requireSignIn(() => {
+    addToWatchlist(item, () => {
       setSelected(item);
       setDialogOpen(true);
     });
@@ -32,7 +41,7 @@ export function MediaGrid({ items, loading, skeletonCount = 18, showType }: Medi
 
   if (loading) {
     return (
-      <div className={GRID}>
+      <div className={cn(GRID, className)}>
         {Array.from({ length: skeletonCount }).map((_, i) => (
           <MediaCardSkeleton key={i} />
         ))}
@@ -52,7 +61,7 @@ export function MediaGrid({ items, loading, skeletonCount = 18, showType }: Medi
 
   return (
     <>
-      <div className={GRID}>
+      <div className={cn(GRID, className)}>
         {items.map((item) => (
           <MediaCard
             key={`${item.type}-${item.id}`}

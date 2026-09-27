@@ -16,6 +16,8 @@ import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import type { MediaCardItem } from "@/components/media-card";
 import type { Watchlist } from "@/lib/db/schema";
+import { addGuestItem } from "@/lib/guest-watchlist";
+import { GUEST_LIMIT } from "@/lib/guest-watchlist-rules";
 
 interface WatchlistDialogProps {
   item: MediaCardItem | null;
@@ -24,16 +26,36 @@ interface WatchlistDialogProps {
 }
 
 /**
- * Browsing is public, watchlists are not. Wraps an "add" handler so a
- * signed-out visitor gets the sign-in modal instead of a dialog whose fetches
- * would all 404 behind the auth proxy.
+ * What an "add to watchlist" click does. Signed-in users pick a list in the
+ * dialog. Signed-out visitors used to get a sign-in wall here, which is where
+ * most of them left; now the title goes into a guest list in this browser,
+ * and moves into their account when they sign up (see GuestWatchlistSync).
  */
-export function useRequireSignIn() {
+export function useAddToWatchlist() {
   const { isSignedIn } = useAuth();
   const clerk = useClerk();
-  return function requireSignIn(action: () => void) {
-    if (isSignedIn) action();
-    else clerk.openSignIn();
+
+  return function addToWatchlist(item: MediaCardItem, openDialog: () => void) {
+    if (isSignedIn) {
+      openDialog();
+      return;
+    }
+
+    const result = addGuestItem(item);
+    const signUp = { label: "Sign up", onClick: () => clerk.openSignUp() };
+    if (result === "added") {
+      toast.success(`Saved "${item.title}"`, {
+        description: "It's kept in this browser. Sign up to keep it everywhere.",
+        action: signUp,
+      });
+    } else if (result === "exists") {
+      toast.info("Already in your watchlist");
+    } else {
+      toast.error(`Your guest list is full (${GUEST_LIMIT} titles)`, {
+        description: "Sign up to save more. Everything here comes with you.",
+        action: signUp,
+      });
+    }
   };
 }
 

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { PlusIcon, ListIcon, Trash2Icon, PencilIcon } from "lucide-react";
+import { PlusIcon, ListIcon, Trash2Icon, PencilIcon, GlobeIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -171,8 +171,17 @@ export function WatchlistsClient({ initialWatchlists }: WatchlistsClientProps) {
                     >
                       {wl.name}
                     </Link>
-                    <p className="text-meta mt-0.5 text-muted-foreground">
+                    <p className="text-meta mt-0.5 flex items-center gap-2 text-muted-foreground">
                       {wl.itemCount} item{wl.itemCount !== 1 ? "s" : ""}
+                      {wl.isPublic && (
+                        <>
+                          <span aria-hidden>·</span>
+                          <span className="flex items-center gap-1">
+                            <GlobeIcon className="size-3" />
+                            Public
+                          </span>
+                        </>
+                      )}
                     </p>
                   </div>
 

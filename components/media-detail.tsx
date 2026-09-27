@@ -56,7 +56,9 @@ export function MediaHero({
       <div
         className={cn(
           INSET,
-          "mx-auto flex max-w-7xl flex-col gap-6 sm:flex-row sm:gap-8",
+          // relative: without it the backdrop above, which is positioned,
+          // paints over the title where the negative margin overlaps it.
+          "relative mx-auto flex max-w-7xl flex-col gap-6 sm:flex-row sm:gap-8",
           backdrop && "-mt-20 sm:-mt-24"
         )}
       >
@@ -111,7 +113,7 @@ export function MediaHero({
             </p>
           )}
 
-          {action && <div className="flex pt-1">{action}</div>}
+          {action && <div className="flex flex-wrap gap-2 pt-1">{action}</div>}
         </div>
       </div>
     </section>
@@ -120,14 +122,20 @@ export function MediaHero({
 
 export function DetailSection({
   title,
+  action,
   children,
 }: {
   title: string;
+  /** Rendered at the right end of the heading row. */
+  action?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
     <section className="flex flex-col gap-4">
-      <h2 className="text-section">{title}</h2>
+      <div className="flex items-center justify-between gap-4">
+        <h2 className="text-section">{title}</h2>
+        {action}
+      </div>
       {children}
     </section>
   );

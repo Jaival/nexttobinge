@@ -32,6 +32,7 @@ Defined in `env.ts` using `@t3-oss/env-nextjs` with Zod validation. A `.env.loca
 | `CLERK_SECRET_KEY` | server | Clerk secret key |
 | `DATABASE_URL` | server | Supabase Postgres connection string |
 | `TMDB_API_KEY` | server | TMDB REST API key |
+| `SITE_URL` | server | Optional public origin for canonical URLs, sitemap and OG tags (see `lib/seo.ts`) |
 
 ---
 
@@ -82,6 +83,9 @@ Single Drizzle client instance connected to Supabase via the `DATABASE_URL` env 
 
 ### Migrations
 - `lib/db/migrations/0000_initial.sql` — raw SQL ready to paste into Supabase SQL Editor
+- `lib/db/migrations/0001_users.sql` — `users` table
+- `lib/db/migrations/0002_unique_watchlist_items.sql` — removes duplicate items, then adds a unique index on `(watchlist_id, media_type, media_id)`
+- `lib/db/migrations/0003_public_watchlists.sql` — `is_public boolean not null default false` on `watchlists`
 - `drizzle.config.ts` — Drizzle Kit config pointing at the schema and migrations folder
 - Scripts: `bun run db:generate`, `bun run db:migrate`, `bun run db:studio`
 
@@ -252,6 +256,9 @@ All routes are protected — they call `auth()` from `@clerk/nextjs/server` and 
 | `POST` | `/api/watchlists/[id]/items` | Add an item (returns 409 if duplicate) |
 | `DELETE` | `/api/watchlists/[id]/items?itemId=` | Remove an item |
 | `PATCH` | `/api/watchlists/[id]/items/[itemId]` | Update an item's watch status |
+| `POST` | `/api/watchlists/import` | Move a guest (localStorage) watchlist into "My watchlist"; idempotent |
+| `POST` | `/api/watchlists/[id]/copy` | Copy a public (or your own) list into your account |
+| `GET` | `/api/recommendations` | "Because you saved…" rows; `Cache-Control: private, max-age=60` |
 
 All write routes verify ownership by checking `user_id = userId` before acting.
 
@@ -262,3 +269,76 @@ All write routes verify ownership by checking `user_id = userId` before acting.
 Added `images.remotePatterns` to allow images from:
 - `image.tmdb.org` — TMDB posters and backdrops
 - `s4.anilist.co` — AniList cover and banner images
+
+---
+
+## SEO
+
+See ROADMAP.md, Phase 1, for the reasoning behind each piece.
+
+| File | What it does |
+|---|---|
+| `lib/seo.ts` | `SITE_URL`, description trimming, `mediaMetadata()` for detail pages, `browseMetadata()` for paginated grids |
+| `components/json-ld.tsx` | Renders schema.org structured data with `<` escaped |
+| `app/layout.tsx` | `metadataBase`, title template (`%s · NextToBinge`), default Open Graph / Twitter tags |
+| `app/opengraph-image.tsx` | Default 1200×630 link-preview image, generated at build time |
+| `app/robots.ts` | `/robots.txt`: disallows `/api/`, `/watchlists`, sign-in and sign-up |
+| `app/sitemap.ts` | `/sitemap.xml`: static routes plus ~600 popular movies, series and anime; revalidates hourly |
+| Detail pages | `generateMetadata` (title, description, canonical, OG images) and `Movie` / `TVSeries` JSON-LD |
+| `app/(main)/search/page.tsx` | `noindex, follow` |
+| `app/(main)/watchlists/layout.tsx` | `noindex, nofollow` |
+| `proxy.ts` | `/robots.txt`, `/sitemap.xml` and `/opengraph-image` are public routes |
+
+`getAnimeDetails` is wrapped in React `cache()` because AniList requests are POSTs, which Next.js does not memoize, and both the page and `generateMetadata` need the data.
+
+---
+
+## Guest mode, where to watch, trailers
+
+See ROADMAP.md, Phase 3, for the reasoning behind each piece.
+
+| File | What it does |
+|---|---|
+| `lib/guest-watchlist.ts` | `localStorage` store for signed-out visitors (`useGuestWatchlist`, `addGuestItem`, `removeGuestItems`), synced across tabs |
+| `lib/guest-watchlist-rules.ts` | `GUEST_LIMIT` (50) and `isPosterUrl()`, shared by the browser store and the import route. No React, so server code can import it |
+| `components/watchlist-dialog.tsx` | `useAddToWatchlist()`: opens the dialog when signed in, saves to the guest list otherwise |
+| `app/(main)/watchlists/guest-watchlist.tsx` | `/watchlists` for signed-out visitors, with a sign-up prompt |
+| `components/guest-watchlist-sync.tsx` | After sign-in, POSTs the guest list to `/api/watchlists/import` and clears only what was sent |
+| `lib/country.ts`, `app/actions/country.ts` | Viewer's country: `ntb-country` cookie, then `x-vercel-ip-country` / `cf-ipcountry`, then `US` |
+| `components/where-to-watch.tsx` | Stream / rent / buy providers (TMDB, via JustWatch) and AniList streaming links |
+| `components/country-select.tsx` | Country picker that calls the `setCountry` Server Action |
+| `components/trailer-button.tsx` | YouTube trailer in a dialog; the iframe only mounts while open |
+| `lib/tmdb.ts` | Detail requests use `append_to_response=videos,watch/providers`; `pickTrailer()` |
+
+---
+
+## Recommendations, mood picker, filters, collections
+
+See ROADMAP.md, Phase 4.
+
+| File | What it does |
+|---|---|
+| `app/api/recommendations/route.ts`, `components/recommendations.tsx` | Up to 3 home-page rows seeded from the user's latest saves, fetched client-side so `/` stays static |
+| `lib/tonight.ts`, `app/(main)/tonight/page.tsx` | `/tonight`: mood × type × length → 3 picks, deterministic per `seed` |
+| `lib/browse-filters.ts`, `components/browse-filters.tsx` | Sort / genre / year / rating (format for anime) on browse pages, stored in the URL. Filtered pages are `noindex, follow` |
+| `lib/collections.ts`, `app/(main)/collections/` | 10 curated lists, pre-rendered with `generateStaticParams`, with `ItemList` JSON-LD and sitemap entries |
+| `lib/media-cards.ts` | `movieToCard` / `tvToCard` / `animeToCard` mappers shared by every grid |
+| `components/chip-link.tsx` | Pill-shaped link used by `/tonight` and the collection pages |
+
+---
+
+## Shareable public lists
+
+See ROADMAP.md, Phase 2.
+
+| File | What it does |
+|---|---|
+| `lib/public-lists.ts` | `getPublicList()` (Data Cache, tag `list:<id>`), `refreshPublicList()` (stale-while-revalidate) and `expirePublicList()` (immediate) |
+| `app/(main)/lists/[id]/page.tsx` | Public, read-only list at `/lists/<id>`; ISR via `generateStaticParams() => []`; `noindex, follow` |
+| `app/(main)/lists/[id]/opengraph-image.tsx` | Link-preview card (list name + 4 posters), converted to JPEG with `sharp` |
+| `app/(main)/lists/[id]/save-copy-button.tsx` | Sign-up modal when signed out, `POST /api/watchlists/[id]/copy` when signed in |
+| `app/(main)/watchlists/[id]/share-dialog.tsx` | Owner's "Public link" switch (`PATCH /api/watchlists/[id]` with `isPublic`) |
+| `components/share-link-button.tsx` | `navigator.share()` on touch devices, clipboard elsewhere |
+| `lib/utils.ts` | `isUuid()`: malformed ids become 404s instead of Postgres errors |
+
+The watchlist write routes validate their bodies with zod and invalidate the list's cache tag. Changing `isPublic` or deleting a list expires it immediately; content edits use stale-while-revalidate.

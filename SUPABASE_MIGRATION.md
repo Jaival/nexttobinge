@@ -37,6 +37,8 @@ Paste each file in order into **SQL Editor → New query**:
 
 1. `lib/db/migrations/0000_initial.sql` — creates enums, `watchlists`, `watchlist_items`
 2. `lib/db/migrations/0001_users.sql` — creates the `users` table
+3. `lib/db/migrations/0002_unique_watchlist_items.sql` — deletes duplicate watchlist items, then adds a unique index so a title can only be in a list once
+4. `lib/db/migrations/0003_public_watchlists.sql` — adds `is_public` to `watchlists` (run it before deploying code that shares lists)
 
 Click **Run** after each one.
 
