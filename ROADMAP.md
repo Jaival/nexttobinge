@@ -2,6 +2,8 @@
 
 The plan for growing NextToBinge from "a site that works" to "a site people find, share, and come back to". Each feature says what it is, why it brings in users, how to build it, and which DevOps / cloud concepts you practise by building it.
 
+The same lessons, organized by topic with a self-test, are in [DEVOPS_LESSONS.md](DEVOPS_LESSONS.md).
+
 Status: ✅ done · 🔜 next · ⬜ planned
 
 ---
@@ -19,45 +21,158 @@ Every feature here moves people through one step of this funnel. If a feature do
 
 | Phase | Funnel step | Features | Status |
 |---|---|---|---|
-| 0 | Foundations | CI, monitoring, analytics, TMDB attribution | 🔜 |
+| 0 | Foundations | CI, monitoring, analytics, TMDB attribution | ✅ |
 | 1 | Find | SEO: metadata, sitemap, structured data, link previews | ✅ |
 | 2 | Share | Public watchlists with generated preview images | ✅ |
 | 3 | Try | Guest watchlist, where to watch, trailers | ✅ |
 | 4 | Engage | Recommendations, mood picker, filters and collections | ✅ |
-| 5 | Stay | Episode progress, ratings, anime calendar, imports, PWA + notifications, year in review | ⬜ |
+| 5 | Stay | Episode progress, ratings, anime calendar, imports, PWA + notifications, year in review | 🔜 |
 | 6 | Community | Follow friends, activity feed | ⬜ |
 
 Build phases in order. Each one feeds the next: SEO brings visitors, sharing multiplies them, guest lists convert them, and retention features keep them.
 
 ---
 
-## Phase 0: Foundations (the DevOps track)
+## Phase 0: Foundations (the DevOps track) ✅
 
-These don't attract users directly. They let you ship the rest safely and tell whether it's working. Phases 1 to 4 are done, so these come next, before Phase 5.
+**Goal:** ship the rest safely and know whether it's working. None of this attracts users directly. It's what stops a bad commit from reaching them, and it tells you which features do attract them.
 
-### 0.1 CI pipeline (GitHub Actions)
-- **What:** on every push and pull request, run `bun install`, `bun run lint`, `tsc --noEmit` and `bun run build`.
-- **Why:** a broken build should fail in a PR, not in production.
-- **How:** `.github/workflows/ci.yml`. Store the env vars the build needs as GitHub Actions secrets. The build calls TMDB (see the sitemap), so it needs a real `TMDB_API_KEY`.
-- **You'll learn:** CI/CD pipelines, secrets management, dependency caching (`actions/cache` on `~/.bun/install/cache`), required status checks and branch protection.
+The code is all in the repo. Four things need accounts or dashboard settings only you can create; the **setup checklist** at the end of this section lists them.
 
-### 0.2 Preview deployments
-- **What:** every PR gets its own URL (Vercel does this automatically once the repo is connected).
-- **You'll learn:** environments (development / preview / production), per-environment env vars, why preview deploys should use a separate database or branch (Supabase branching).
+### What was built, and why
 
-### 0.3 Analytics and Search Console
-- **What:** Google Search Console for search traffic; privacy-friendly analytics (Vercel Web Analytics, Plausible or PostHog) for visits and sign-ups.
-- **Why:** without numbers you can't tell which features actually attract users.
-- **You'll learn:** DNS TXT records (domain verification), event tracking, funnels.
+| Piece | Files | What it does |
+|---|---|---|
+| CI pipeline | `.github/workflows/ci.yml` | Lint, typecheck and build on every PR and every push to `main` |
+| Dependency updates | `.github/dependabot.yml` | Weekly grouped PRs for package updates; immediate PRs for security advisories |
+| Env template | `.env.example`, `env.ts` | Every variable listed, none of the values. Optional vars may be left blank |
+| Preview safety | `app/robots.ts` | Preview deployments tell crawlers to stay out |
+| Analytics | `app/layout.tsx`, `lib/analytics.ts` | Vercel Web Analytics + Speed Insights; funnel events behind one `track()` function |
+| Search Console | `app/layout.tsx` | Optional `GOOGLE_SITE_VERIFICATION` meta tag |
+| Error monitoring | `instrumentation.ts`, `instrumentation-client.ts`, `lib/sentry.ts`, `next.config.ts` | Sentry for server and browser errors, off until a DSN is set |
+| Health check | `app/api/health/route.ts` | `GET /api/health`: 200 when the app and database are up, 503 when not |
+| TMDB attribution | `components/site-footer.tsx`, `public/tmdb-logo.svg` | Required TMDB notice and logo, plus AniList and JustWatch credits |
 
-### 0.4 Error monitoring
-- **What:** Sentry (or similar) for server and client errors.
-- **Why:** TMDB and AniList are third-party APIs that sometimes fail or rate-limit. You want to know before your users tell you.
-- **You'll learn:** observability, source maps, alerting and noise control.
+### 0.1 CI: concepts worth understanding
 
-### 0.5 TMDB attribution (required)
-- **What:** a footer with the TMDB logo and "This product uses the TMDB API but is not endorsed or certified by TMDB."
-- **Why:** it's a condition of TMDB's API terms. Once more users arrive, don't risk losing your key.
+**Two jobs, split by what they need.**
+- `checks` (lint + typecheck) needs no secrets at all. It sets `SKIP_ENV_VALIDATION=1`, because `next.config.ts` validates env vars when it loads. Because it holds no secrets, it also runs for pull requests from forks.
+- `build` needs the TMDB key, because the build prerenders the home page, collections and sitemap from TMDB data. It only starts once `checks` passes (`needs: checks`), so a lint error doesn't waste a two-minute build.
+
+**Secrets vs variables, and least privilege.**
+- The **TMDB key** is a *secret*: encrypted, and masked in logs.
+- The **Clerk publishable key** is a *variable*. It ships to every browser anyway, so hiding it gains nothing.
+- The **database URL and Clerk secret key** are *placeholders*. The build only validates them and never connects. So CI holds no credential that could reach real users' data, and a leaked CI log exposes nothing.
+- `permissions: contents: read` limits the job's GitHub token to reading code.
+
+> 🛠 **DevOps lesson:** give each job exactly the access it needs. This was rehearsed in a clean copy of the repo (no `.env`, no `node_modules`): the build passed with only the TMDB key real.
+
+**Forks can't see your secrets.** This repo is public. GitHub doesn't pass secrets to workflows triggered by pull requests from forks; otherwise anyone could open a PR that prints them. The `build` job is skipped for fork PRs instead of failing confusingly.
+
+**Reproducible installs.** `bun install --frozen-lockfile` fails if `package.json` and `bun.lock` disagree, instead of quietly installing different versions than you tested.
+
+**Caching, keyed on content.** CI caches two things:
+- Downloaded packages, keyed on the hash of `bun.lock`: same lockfile, same cache.
+- Next.js's build cache, with `restore-keys` falling back to the closest older entry, so small changes rebuild quickly.
+
+**Concurrency.** A new push to a branch cancels the run still going for the old commit.
+
+**Pinned versions.** Bun is pinned to the local version, and the actions to their current majors (`checkout@v7`, `cache@v6`, `setup-bun@v2`). These were looked up rather than copied from an older tutorial.
+
+**Dependabot.**
+- Minor and patch updates arrive as **one** grouped PR per week, so they don't become noise you learn to ignore. Major versions get their own PR, because those are the ones worth reading.
+- GitHub Actions are updated too: they're code that runs with access to your secrets.
+
+**The last step is on GitHub, not in the repo.** A red check is only advice until **branch protection** makes it a rule: Settings → Branches → add a rule for `main` → require the `Lint and typecheck` and `Build` checks to pass.
+
+### 0.2 Preview deployments: concepts worth understanding
+Once the repo is connected to Vercel, every PR gets its own URL. Vercel has three **environments**: Development, Preview and Production. Each environment variable can be set for each one separately.
+
+- **Search engines:** a preview is a full copy of the site at another URL. `robots.ts` returns `Disallow: /` when `VERCEL_ENV` is `preview` (tested with a preview build). Canonical tags already point at production, because `SITE_URL` falls back to `VERCEL_PROJECT_PRODUCTION_URL`.
+- **Data:** by default a preview uses the **same database** as production. Anyone testing a PR could then change real users' watchlists, and a PR with a new migration can break production before it's merged. Set `DATABASE_URL` for the **Preview** environment to a separate Supabase project (or a Supabase branch).
+- **Auth:** use your Clerk **development** instance keys for Preview, so test sign-ups don't become real accounts.
+
+> 🛠 **DevOps lesson:** environments are only isolated if their *data and credentials* are. Separate URLs with a shared database are not separate environments.
+
+### 0.3 Analytics and Search Console: concepts worth understanding
+**Page views and speed.** `<Analytics />` records page views, and `<SpeedInsights />` records Core Web Vitals (LCP, INP, CLS) from real visitors' devices. That's field data, which is what Google ranks on, as opposed to one Lighthouse run on your laptop. Both are cookieless, so no consent banner is needed for them, and both only report on Vercel.
+
+**Funnel events.** Page views can't tell you whether guest mode leads to sign-ups. `lib/analytics.ts` defines the events that can:
+
+```text
+Title saved (guest) → Guest list imported     ← did guest mode convert?
+List made public → List shared → List copied  ← do shared lists spread?
+Trailer played                                ← is the trailer button used?
+```
+
+Three rules:
+- **One function.** Every event goes through `track()`. Moving to PostHog or Plausible later means editing one file.
+- **Typed.** The event names and their properties are declared once, so a typo is a compile error instead of a silently missing chart.
+- **Actions, not people.** Properties describe what happened (`as: "guest"`, `method: "clipboard"`), never user ids, emails or titles.
+
+Custom events need Vercel's **Pro** plan. On Hobby, page views and Speed Insights work, and `track()` calls are harmless.
+
+**Search Console.** It shows the queries you rank for, click-through rates and indexing errors, which is the scoreboard for Phase 1. There are two ways to prove you own the site:
+- A **DNS TXT record** (recommended, "Domain" property). It covers every subdomain and protocol, and needs nothing in the app.
+- An **HTML meta tag** ("URL prefix" property): set `GOOGLE_SITE_VERIFICATION`.
+
+After verifying, submit `https://<your-domain>/sitemap.xml`.
+
+### 0.4 Error monitoring: concepts worth understanding
+**What gets captured.**
+- **Server:** `onRequestError` in `instrumentation.ts` catches errors thrown by Server Components, route handlers, Server Actions and `proxy.ts`. Without it they only reach a log you'd have to go looking in.
+- **Browser:** `instrumentation-client.ts` catches errors in visitors' browsers, which you would otherwise never see.
+- **Environment:** every event is tagged `production` or `preview`.
+
+**Off by default.** With no `NEXT_PUBLIC_SENTRY_DSN`, Sentry never initialises, so local dev, CI and forks send nothing. A DSN only allows *sending* events, which is why it's safe in the browser bundle.
+
+**Privacy is a setting you choose** (`lib/sentry.ts`). Sentry v11 collects cookies, headers, request bodies, database query values and local variables by default. For this app that would include Clerk's session cookie and users' watchlist contents. An error report needs the stack trace, the route and the browser, not the user's data. Everything else is turned off, in one shared object that both the server and the browser use.
+> 🛠 **DevOps lesson:** read what a monitoring SDK collects before shipping it. It's a data flow to a third party like any other.
+
+**Source maps.** Production JavaScript is minified, so a raw stack trace reads `a.b is not a function at 1:48213`. At build time, source maps are uploaded to Sentry (if `SENTRY_AUTH_TOKEN` is set), which lets it show `share-dialog.tsx:48` instead. They're removed from the deployed output after upload. Without a token, the upload is skipped instead of failing the build.
+
+**The tunnel and the proxy.** Ad blockers block `sentry.io`, so browser errors are sent to `/monitoring` on your own domain, which forwards them. That route goes through `proxy.ts` like any other request, and Clerk would redirect signed-out visitors' error reports to the sign-in page. So `/monitoring` is listed as a public route. (Sentry's own docs call this out.)
+
+**Noise control.** The browser config ignores errors from browser extensions and harmless `ResizeObserver` warnings. 10% of requests are traced for performance. An alert that fires for things you can't fix trains you to ignore alerts, and then you miss the real one.
+
+**Health checks and uptime.** `GET /api/health` returns 200 with the database's response time, or 503. An uptime monitor such as Better Stack, UptimeRobot or Checkly (all have free tiers) can request it every minute and alert you. Design choices:
+- It checks the **database** (the app can't save anything without it), but **not TMDB or AniList**. When they're down most pages still render, and you can't fix their outage anyway.
+- A **3-second timeout**, so a hung connection fails the check instead of hanging the monitor. When the test database was stopped, the endpoint answered 503 in 0.02 s.
+- `Cache-Control: no-store`, and no error details, because the endpoint is public.
+- It reports the deployed commit, which is handy right after a release.
+
+### 0.5 TMDB attribution
+TMDB's terms require the logo and the exact notice "This product uses the TMDB API but is not endorsed or certified by TMDB", with their logo less prominent than yours. It's in a new site-wide footer, alongside AniList and JustWatch credits. The official logo is served from `/public`, not hot-linked. The footer's links also give every page a crawl path to every section.
+
+**Bug fixed along the way:** the README said `cp .env.local.example .env.local`, but that file never existed: `.gitignore`'s `.env*` rule had always hidden it. `.env.example` is now committed through a `!.env.example` exception, with names only.
+
+### How it was verified
+- **CI rehearsal:** a clean copy of the repo as a fresh checkout would see it. `bun install --frozen-lockfile`, lint and typecheck passed with no secrets. The build passed with placeholder database and Clerk credentials.
+- **Preview build:** `robots.txt` was `Disallow: /`. The normal build keeps the usual rules.
+- **Health check:** 200 with the database up; 503 in 0.02 s with it stopped.
+- **Tunnel:** `/monitoring` isn't redirected to sign-in.
+- **Footer:** the TMDB notice renders; screenshots at 1280px and 390px.
+
+**Not yet verified:** the workflow on GitHub's runners, and Sentry receiving events. Both need the setup below.
+
+### Setup checklist (in your accounts)
+1. **GitHub → Settings → Secrets and variables → Actions:**
+   - add the secret `TMDB_API_KEY`;
+   - add the variable `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` (the Clerk *development* instance's key).
+2. **GitHub → Settings → Branches:** protect `main` and require the `Lint and typecheck` and `Build` checks.
+3. **Vercel → Project → Settings → Environment Variables:** give **Preview** its own `DATABASE_URL` and Clerk development keys.
+4. **Vercel → Analytics** and **Speed Insights:** enable both.
+5. **Sentry:** create a Next.js project.
+   - Set `NEXT_PUBLIC_SENTRY_DSN` in Vercel (Production and Preview).
+   - For readable stack traces, also set `SENTRY_ORG`, `SENTRY_PROJECT` and `SENTRY_AUTH_TOKEN`.
+   - Create an alert rule: "a new issue is seen" → email.
+6. **Search Console:** add a Domain property, verify with the DNS TXT record, and submit the sitemap.
+7. **Uptime:** point a monitor at `https://<your-domain>/api/health`.
+
+### Possible follow-ups
+- Add a `test` job once there are tests. The unique index and the authorization rules from Phases 2–3 are the first candidates.
+- Run migrations from CI (`drizzle-kit migrate`) as a gated deploy step, instead of by hand in the SQL editor.
+- A Content Security Policy header, now that the third-party origins are known: Clerk, YouTube, Vercel, and Sentry via the tunnel.
 
 ---
 
@@ -415,8 +530,8 @@ The notifications feature is the most DevOps-heavy item on this roadmap. A cron 
 
 | Concept | Where you practise it |
 |---|---|
-| Env config per environment | Phase 1 (`SITE_URL`), 0.2 |
-| CI/CD, secrets | 0.1, 0.2 |
+| Env config per environment | 0.1 (`SKIP_ENV_VALIDATION`), 0.2 (Preview vs Production), Phase 1 (`SITE_URL`) |
+| CI/CD, secrets | 0.1 (secrets vs variables, forks, least privilege), 0.2 |
 | Caching layers, ISR, CDN | Phase 1, 2 (tag invalidation), 3.2, 4 (collections, private API responses) |
 | Geo headers at the edge | 3.2 |
 | Database migrations and constraints | 2 (additive column, deploy order), 3.1 (unique index), 5 |
@@ -425,5 +540,5 @@ The notifications feature is the most DevOps-heavy item on this roadmap. A cron 
 | Input validation (URL, body, localStorage) | 2 (SSRF), 3.1, 4 |
 | Rendering modes: static, dynamic, client | 4 |
 | Background jobs and cron | Phase 5 |
-| Observability, alerting | 0.3, 0.4, Phase 5 |
+| Observability, alerting | 0.3 (funnel events, Web Vitals), 0.4 (Sentry, health check), Phase 5 |
 | Third-party API limits | Every phase: TMDB, AniList |

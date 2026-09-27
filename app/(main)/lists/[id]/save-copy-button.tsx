@@ -6,6 +6,7 @@ import { SignUpButton, useAuth } from "@clerk/nextjs";
 import { CopyPlusIcon, ArrowRightIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { track } from "@/lib/analytics";
 
 /**
  * The sign-up hook on a shared list. A visitor who likes someone's list is
@@ -50,6 +51,7 @@ export function SaveCopyButton({ listId }: { listId: string }) {
       if (!res.ok) throw new Error();
       const copy: { id: string; name: string } = await res.json();
       setCopyId(copy.id);
+      track("List copied", {});
       toast.success(`Saved "${copy.name}" to your watchlists`);
     } catch {
       toast.error("Couldn't save a copy");

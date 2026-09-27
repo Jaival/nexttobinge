@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ShareLinkButton } from "@/components/share-link-button";
 import { cn } from "@/lib/utils";
+import { track } from "@/lib/analytics";
 
 interface ShareDialogProps {
   open: boolean;
@@ -49,6 +50,7 @@ export function ShareDialog({
       if (!res.ok) throw new Error();
       const updated: { isPublic: boolean } = await res.json();
       onIsPublicChange(updated.isPublic);
+      if (updated.isPublic) track("List made public", {});
       toast.success(updated.isPublic ? "Anyone with the link can view it" : "The list is private again");
     } catch {
       toast.error("Couldn't change sharing");
@@ -100,7 +102,13 @@ export function ShareDialog({
 
         {isPublic && (
           <div className="flex flex-wrap gap-2">
-            <ShareLinkButton path={path} title={name} label="Copy or share link" variant="default" />
+            <ShareLinkButton
+              path={path}
+              title={name}
+              label="Copy or share link"
+              variant="default"
+              owner
+            />
             <Button variant="outline" size="sm" asChild>
               <Link href={path} target="_blank">
                 <ExternalLinkIcon data-icon="inline-start" />

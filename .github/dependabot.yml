@@ -1,0 +1,22 @@
+# Dependabot opens pull requests when dependencies have updates, and at
+# once when one has a published security advisory. CI then tells you whether
+# the update breaks anything before you merge it.
+version: 2
+updates:
+  - package-ecosystem: bun
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    # One PR per week for all minor and patch bumps instead of one per
+    # package. Major versions still get their own PR: those are the ones
+    # that need reading.
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+
+  # Actions are dependencies too, and they run with access to your secrets.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly

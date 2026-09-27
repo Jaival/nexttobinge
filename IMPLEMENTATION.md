@@ -342,3 +342,28 @@ See ROADMAP.md, Phase 2.
 | `lib/utils.ts` | `isUuid()`: malformed ids become 404s instead of Postgres errors |
 
 The watchlist write routes validate their bodies with zod and invalidate the list's cache tag. Changing `isPublic` or deleting a list expires it immediately; content edits use stale-while-revalidate.
+
+---
+
+## Foundations: CI, monitoring, analytics
+
+See ROADMAP.md, Phase 0, including the setup checklist for the accounts involved.
+
+| File | What it does |
+|---|---|
+| `.github/workflows/ci.yml` | `checks` (lint, `next typegen` + `tsc`) with no secrets; `build` with the TMDB key and placeholder DB/Clerk credentials, skipped for fork PRs |
+| `.github/dependabot.yml` | Weekly grouped bun updates, monthly GitHub Actions updates |
+| `.env.example` | Every env var, no values (un-ignored in `.gitignore`) |
+| `env.ts` | `SKIP_ENV_VALIDATION` for CI, `emptyStringAsUndefined`, optional `GOOGLE_SITE_VERIFICATION` and `NEXT_PUBLIC_SENTRY_DSN` |
+| `instrumentation.ts`, `instrumentation-client.ts` | Sentry for server and browser, only when a DSN is set; `onRequestError` captures server errors |
+| `lib/sentry.ts` | Shared Sentry options: 10% tracing, data collection limited to user agent and referer |
+| `next.config.ts` | `withSentryConfig`: source map upload when `SENTRY_AUTH_TOKEN` is set, `/monitoring` tunnel |
+| `lib/analytics.ts` | Typed `track()` for funnel events (Vercel Web Analytics) |
+| `app/layout.tsx` | `<Analytics />`, `<SpeedInsights />`, Search Console verification |
+| `app/api/health/route.ts` | Uptime check: database `select 1` with a 3 s timeout; 200 or 503, `no-store` |
+| `app/robots.ts` | `Disallow: /` on preview deployments |
+| `components/site-footer.tsx` | Footer with section links and TMDB / AniList / JustWatch attribution |
+| `proxy.ts` | `/api/health` and `/monitoring` are public |
+
+Scripts: `bun run typecheck` runs `next typegen && tsc --noEmit`.
+
