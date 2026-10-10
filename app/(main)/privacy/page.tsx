@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/page-header";
+import { CONTACT_URL } from "@/lib/seo";
 
 export const metadata: Metadata = {
   title: "Privacy",
@@ -9,10 +10,6 @@ export const metadata: Metadata = {
 
 // Update this date whenever the policy's substance changes.
 const LAST_UPDATED = "10 October 2026";
-
-// Where privacy requests go. The repository is public, so a request filed
-// there is public too: replace this with a private address before launch.
-const CONTACT_URL = "https://github.com/Jaival/nexttobinge/issues";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
