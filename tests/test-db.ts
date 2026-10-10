@@ -16,6 +16,6 @@ export async function createTestDb() {
   return {
     db,
     /** Empties every table between tests. */
-    reset: () => db.execute(sql`TRUNCATE watchlist_items, watchlists, users CASCADE`),
+    reset: () => db.execute(sql`TRUNCATE episode_progress, watchlist_items, watchlists, users CASCADE`),
   };
 }

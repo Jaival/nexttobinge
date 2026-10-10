@@ -507,7 +507,7 @@ curl -o /dev/null -w "%{http_code}" localhost:3110/api/recommendations   # 401 w
 
 | Feature | What | You'll learn |
 |---|---|---|
-| **Episode progress** | Track "S2E5" per series; an "Up next" row on the home page | Schema design (progress table), optimistic UI |
+| **Episode progress** ✅ | Track "S2E5" per series; an "Up next" row on the home page | Schema design (progress table), optimistic UI |
 | **Ratings and reviews** | Your own 1–10 score and a short note; later, community averages | Aggregation queries, and ratings you're allowed to put in JSON-LD |
 | **Seasonal anime calendar** | This week's airing episodes from AniList `airingSchedule` | Time zones, ISR schedules |
 | **Imports** | MyAnimeList / AniList / Letterboxd / IMDb CSV import | File uploads, background jobs (Inngest or QStash), retries, progress reporting |
@@ -515,6 +515,37 @@ curl -o /dev/null -w "%{http_code}" localhost:3110/api/recommendations   # 401 w
 | **Year in review** | "You watched 142 hours in 2026", as a shareable image | Batch jobs, OG images again, loops back to Phase 2 |
 
 The notifications feature is the most DevOps-heavy item on this roadmap. A cron job runs every hour, finds newly aired episodes, looks up the users tracking those shows, and sends push messages. It has to be idempotent, rate-limited and monitored. Build it after Phase 0's monitoring is in place.
+
+### 5.1 Episode progress ✅
+
+| Piece | Files | What it does |
+|---|---|---|
+| Progress table | `lib/db/schema.ts`, `lib/db/migrations/0001_episode_progress.sql` | One row per user and show: the last episode watched |
+| Episode logic | `lib/progress.ts` | Turns TMDB/AniList details into a season guide, and works out the next episode |
+| API | `app/api/progress/[type]/[id]/route.ts`, `app/api/progress/route.ts` | Read, set and reset one show's progress; list "Up next" |
+| Tracker | `components/episode-progress.tsx` | "Mark S2 · E6 watched", a season/episode picker and Reset on series and anime pages |
+| Up next row | `components/up-next.tsx` | The next unwatched episode of each show in progress, at the top of the home page |
+
+**Concepts worth understanding**
+
+**Progress belongs to the user, not the list.** The same show can sit in two watchlists, and you can track a show you never saved. So progress is its own table keyed by `(user_id, media_type, media_id)`, with a unique index on exactly that.
+
+**Store the position, compute the rest.** Only "last watched: S2E5" is stored. What comes next depends on the show (season lengths, what has aired, whether it ended), which changes over time and lives in TMDB/AniList. `nextEpisode()` works it out at read time, so a new season shows up in "Up next" without touching the database. TMDB's season list includes announced episodes, so `last_episode_to_air` caps it; for anime with no total, AniList's `nextAiringEpisode` does.
+
+**PUT + upsert = idempotent.** "Mark watched" sends the absolute position (`episode: 6`), not "add one". A retried or double-clicked request lands in the same state, and `INSERT … ON CONFLICT DO UPDATE` means two first-time requests can't create two rows.
+> 🛠 **DevOps lesson:** make writes set a state rather than apply a change wherever you can. Retries, which every network layer does, then become harmless.
+
+**Optimistic UI.** The tracker shows the new episode immediately and puts the old one back with a toast if the server refuses. The buttons stay disabled while a save is in flight: otherwise two requests could arrive out of order and leave the server one episode behind the screen.
+
+**Fresh vs cacheable personal data.** Recommendations are `private, max-age=60`: a minute-old row is fine. "Up next" is `private, no-store`, because you mark an episode, go home and expect it to have moved on.
+
+**How it was verified:** `bun test` covers the episode logic (season rollover, unaired episodes, gaps in TMDB's season numbers, anime with no total) and the API (401 signed out, users can't read or reset each other's progress, repeated saves leave one row, bad input is a 400). **Not yet verified:** the tracker and "Up next" row with a real signed-in account.
+
+**After you deploy:** run `bun run db:migrate` against each database, as in [LAUNCH_CHECKLIST.md](LAUNCH_CHECKLIST.md) §3, so `0001_episode_progress.sql` creates the table. Deploy the code after the migration, not before: the new routes fail without the table.
+
+**Possible follow-ups**
+- Set the watchlist item to "Watching" when you mark the first episode, and "Watched" when you finish.
+- "Mark whole season watched" in one click.
 
 ---
 

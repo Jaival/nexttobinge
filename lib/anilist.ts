@@ -103,6 +103,7 @@ query AnimeDetail($id: Int) {
     }
     trailer { id site }
     externalLinks { id site url type language }
+    nextAiringEpisode { episode airingAt }
   }
 }`;
 
@@ -240,6 +241,8 @@ export const getAnimeDetails = cache(async function getAnimeDetails(id: number) 
       };
       trailer: { id: string; site: string } | null;
       externalLinks: AniListExternalLink[];
+      /** Null once a show has finished airing, or before a schedule exists. */
+      nextAiringEpisode: { episode: number; airingAt: number } | null;
     };
   }>(DETAIL_QUERY, { id });
   return data.Media;

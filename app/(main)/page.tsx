@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { MediaGrid } from "@/components/media-grid";
 import { Recommendations } from "@/components/recommendations";
+import { UpNext } from "@/components/up-next";
 import { getTrendingMovies, getTrendingTV } from "@/lib/tmdb";
 import { getTrendingAnime } from "@/lib/anilist";
 import { animeToCard, movieToCard, tvToCard } from "@/lib/media-cards";
@@ -86,6 +87,8 @@ export default async function HomePage() {
           ))}
         </div>
       </section>
+
+      <UpNext />
 
       <Recommendations />
 

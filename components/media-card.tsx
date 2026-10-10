@@ -16,6 +16,8 @@ export interface MediaCardItem {
   year: string | null;
   rating: number | null;
   type: MediaType;
+  /** Replaces the year under the title, e.g. the next episode on "Up next". */
+  note?: string;
 }
 
 interface MediaCardProps {
@@ -114,7 +116,7 @@ export function MediaCard({ item, onAddToWatchlist, showType, className }: Media
           {item.title}
         </Link>
         <p className="text-meta text-muted-foreground">
-          {[showType ? TYPE_LABELS[item.type] : null, item.year]
+          {[showType ? TYPE_LABELS[item.type] : null, item.note ?? item.year]
             .filter(Boolean)
             .join(" · ") || " "}
         </p>

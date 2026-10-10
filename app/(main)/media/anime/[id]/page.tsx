@@ -4,10 +4,12 @@ import { JsonLd } from "@/components/json-ld";
 import { AddToWatchlistButton } from "@/components/add-to-watchlist-button";
 import { TrailerButton } from "@/components/trailer-button";
 import { AnimeStreamingLinks } from "@/components/where-to-watch";
+import { EpisodeProgress } from "@/components/episode-progress";
 import { MediaHero, DetailSection, PersonRail } from "@/components/media-detail";
 import { MediaGrid } from "@/components/media-grid";
 import { getAnimeDetails, getAnimeTitle, getAnimeDescription } from "@/lib/anilist";
 import { absoluteUrl, mediaMetadata } from "@/lib/seo";
+import { animeGuide } from "@/lib/progress";
 import type { MediaCardItem } from "@/components/media-card";
 
 interface PageProps {
@@ -66,6 +68,8 @@ export default async function AnimeDetailPage({ params }: PageProps) {
   }));
 
   const studios = anime.studios.nodes.map((s) => s.name).join(", ");
+  // A film has nothing to track, and an unaired show nothing to watch yet.
+  const tracksEpisodes = anime.format !== "MOVIE" && anime.status !== "NOT_YET_RELEASED";
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -110,6 +114,16 @@ export default async function AnimeDetailPage({ params }: PageProps) {
           </>
         }
       />
+
+      {tracksEpisodes && (
+        <EpisodeProgress
+          type="anime"
+          id={anime.id}
+          title={title}
+          posterUrl={anime.coverImage.extraLarge}
+          guide={animeGuide(anime)}
+        />
+      )}
 
       <AnimeStreamingLinks links={anime.externalLinks ?? []} />
 

@@ -69,6 +69,10 @@ export default function PrivacyPage() {
               <strong>Your watchlists</strong>: their names and descriptions, the titles in them,
               and whether you&apos;ve watched each one.
             </li>
+            <li>
+              <strong>Your episode progress</strong>: for each series or anime you track, the last
+              episode you marked as watched.
+            </li>
           </ul>
           <p>
             We use this only to run the site for you. We don&apos;t sell it, share it with
@@ -136,8 +140,9 @@ export default function PrivacyPage() {
         <Section title="Deleting your account">
           <p>
             Open the account menu in the top corner, choose <strong>Manage account</strong>, then{" "}
-            <strong>Delete account</strong>. This deletes your account and every watchlist in it,
-            including shared ones, whose links stop working straight away. It can&apos;t be undone.
+            <strong>Delete account</strong>. This deletes your account, your episode progress and
+            every watchlist, including shared ones, whose links stop working straight away. It
+            can&apos;t be undone.
           </p>
         </Section>
 
