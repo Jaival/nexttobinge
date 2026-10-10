@@ -1,51 +1,34 @@
 import { NextResponse } from "next/server";
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 
-// Everything a visitor can look at is public; only saved watchlists (pages and
-// API) need an account. Detail pages and search are included because a public
-// browse grid whose cards lead to a sign-in wall would be a dead end.
-const isPublicRoute = createRouteMatcher([
-  "/",
-  "/browse(.*)",
-  "/media(.*)",
-  "/search(.*)",
-  "/tonight",
-  "/collections(.*)",
-  "/privacy",
-  // Shared watchlists and their preview images. The page itself returns 404
-  // unless the owner made the list public; proxy.ts only decides who needs
-  // to be signed in, not who may see what.
-  "/lists(.*)",
-  // Exactly /watchlists: signed-out visitors see their guest list there.
-  // /watchlists/<id> stays protected.
-  "/watchlists",
-  "/sign-in(.*)",
-  "/sign-up(.*)",
+// Pages are public by default and only saved watchlists need an account.
+// Defaulting the other way would send signed-out visitors (and crawlers)
+// following a dead link to /sign-in instead of the 404 page. Each protected
+// page also checks auth() itself; this list only decides who gets redirected.
+// /watchlists itself stays public: signed-out visitors see their guest list.
+const isProtectedPage = createRouteMatcher(["/watchlists/(.+)"]);
+
+// API routes are the opposite: private unless listed here.
+const isPublicApiRoute = createRouteMatcher([
   "/api/webhooks(.*)",
-  // Fetched by crawlers and link-preview bots, which never have a session.
-  "/robots.txt",
-  "/sitemap.xml",
-  "/opengraph-image(.*)",
-  // Uptime monitors and Sentry's error tunnel (see next.config.ts). Neither
-  // ever has a session.
+  // Uptime monitors never have a session.
   "/api/health",
-  "/monitoring(.*)",
 ]);
 
 const isApiRoute = createRouteMatcher(["/api(.*)"]);
 
 export default clerkMiddleware(
   async (auth, req) => {
-    if (isPublicRoute(req)) return;
-
     // protect() answers with a redirect to /sign-in, which fetch() follows
     // into an HTML page. API callers get a JSON 401 instead.
     if (isApiRoute(req)) {
+      if (isPublicApiRoute(req)) return;
       const { userId } = await auth();
       if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
       return;
     }
 
+    if (!isProtectedPage(req)) return;
     await auth.protect();
   },
   // Without these, protect() sends visitors to Clerk's hosted Account Portal
