@@ -14,6 +14,11 @@ updates:
     groups:
       minor-and-patch:
         update-types: [minor, patch]
+    # The Node types follow the Node version Vercel runs (Project Settings ->
+    # Node.js Version, 24.x). Bump this by hand when that setting changes.
+    ignore:
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
 
   # Actions are dependencies too, and they run with access to your secrets.
   - package-ecosystem: github-actions
