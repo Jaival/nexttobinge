@@ -106,6 +106,7 @@ bun dev           # Start development server
 bun run build     # Production build
 bun run lint      # Run ESLint
 bun run typecheck # Generate route types, then run tsc
+bun run test      # Authorization and routing tests (in-memory Postgres, no setup)
 bun run db:generate   # Generate Drizzle migrations from schema
 bun run db:migrate    # Apply migrations to the database
 bun run db:studio     # Open Drizzle Studio (visual DB browser)
@@ -115,10 +116,11 @@ bun run db:studio     # Open Drizzle Studio (visual DB browser)
 
 The app is ready to deploy on [Vercel](https://vercel.com). Add the same environment variables from `.env.local` to your Vercel project settings, then push to deploy.
 
-Every pull request runs CI (`.github/workflows/ci.yml`): lint, typecheck and a production build. The one-time setup for CI, preview environments, analytics and error monitoring is the checklist in [ROADMAP.md](ROADMAP.md), Phase 0.
+Every pull request runs CI (`.github/workflows/ci.yml`): lint, typecheck, tests and a production build. Everything that needs your accounts before launch (Clerk production, Vercel, Sentry, Search Console) is in [LAUNCH_CHECKLIST.md](LAUNCH_CHECKLIST.md).
 
 ## Docs
 
+- [LAUNCH_CHECKLIST.md](LAUNCH_CHECKLIST.md): the account and dashboard steps to do before and after launch
 - [ROADMAP.md](ROADMAP.md): features by phase, why each one attracts users, and what was built
 - [DEVOPS_LESSONS.md](DEVOPS_LESSONS.md): the DevOps lessons from building it, by topic, with a self-test
 - [IMPLEMENTATION.md](IMPLEMENTATION.md): file-by-file reference

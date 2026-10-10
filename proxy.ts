@@ -1,21 +1,6 @@
 import { NextResponse } from "next/server";
-import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
-
-// Pages are public by default and only saved watchlists need an account.
-// Defaulting the other way would send signed-out visitors (and crawlers)
-// following a dead link to /sign-in instead of the 404 page. Each protected
-// page also checks auth() itself; this list only decides who gets redirected.
-// /watchlists itself stays public: signed-out visitors see their guest list.
-const isProtectedPage = createRouteMatcher(["/watchlists/(.+)"]);
-
-// API routes are the opposite: private unless listed here.
-const isPublicApiRoute = createRouteMatcher([
-  "/api/webhooks(.*)",
-  // Uptime monitors never have a session.
-  "/api/health",
-]);
-
-const isApiRoute = createRouteMatcher(["/api(.*)"]);
+import { clerkMiddleware } from "@clerk/nextjs/server";
+import { isApiRoute, isProtectedPage, isPublicApiRoute } from "@/lib/route-access";
 
 export default clerkMiddleware(
   async (auth, req) => {

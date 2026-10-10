@@ -54,6 +54,30 @@ jobs:
       - run: bun run lint
       - run: bun run typecheck
 
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      # The tests run against an in-memory Postgres (PGlite) and stub Clerk,
+      # so like the checks job they need no secrets and run for forks too.
+      SKIP_ENV_VALIDATION: 1
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - uses: actions/cache@v6
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: bun-${{ runner.os }}-
+
+      - run: bun install --frozen-lockfile
+      - run: bun run test
+
   build:
     name: Build
     needs: checks
