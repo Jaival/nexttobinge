@@ -5,6 +5,7 @@ import { MediaGrid } from "@/components/media-grid";
 import { AddToWatchlistButton } from "@/components/add-to-watchlist-button";
 import { TrailerButton } from "@/components/trailer-button";
 import { WhereToWatch } from "@/components/where-to-watch";
+import { EpisodeProgress } from "@/components/episode-progress";
 import { MediaHero, DetailSection, PersonRail } from "@/components/media-detail";
 import {
   getTVDetails,
@@ -15,6 +16,7 @@ import {
   pickTrailer,
 } from "@/lib/tmdb";
 import { absoluteUrl, mediaMetadata } from "@/lib/seo";
+import { tvGuide } from "@/lib/progress";
 import type { MediaCardItem } from "@/components/media-card";
 
 interface PageProps {
@@ -80,6 +82,7 @@ export default async function TVDetailPage({ params }: PageProps) {
     : null;
 
   const trailer = pickTrailer(show.videos?.results);
+  const guide = tvGuide(show);
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -119,6 +122,16 @@ export default async function TVDetailPage({ params }: PageProps) {
           </>
         }
       />
+
+      {guide.seasons.length > 0 && (
+        <EpisodeProgress
+          type="tv"
+          id={show.id}
+          title={show.name}
+          posterUrl={cardItem.posterUrl}
+          guide={guide}
+        />
+      )}
 
       <WhereToWatch providers={show["watch/providers"]?.results} />
 

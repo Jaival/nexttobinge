@@ -150,8 +150,26 @@ export async function getMovieDetails(id: number) {
   return tmdbFetch<TMDBMovie & DetailExtras>(`/movie/${id}`, DETAIL_EXTRAS);
 }
 
+/** Only on the TV details response. */
+export interface TMDBSeasonSummary {
+  season_number: number;
+  /** Includes announced episodes that haven't aired yet. */
+  episode_count: number;
+  air_date: string | null;
+}
+
+export interface TMDBEpisodeRef {
+  season_number: number;
+  episode_number: number;
+}
+
+interface TVDetailFields {
+  seasons?: TMDBSeasonSummary[];
+  last_episode_to_air?: TMDBEpisodeRef | null;
+}
+
 export async function getTVDetails(id: number) {
-  return tmdbFetch<TMDBTVShow & DetailExtras>(`/tv/${id}`, DETAIL_EXTRAS);
+  return tmdbFetch<TMDBTVShow & TVDetailFields & DetailExtras>(`/tv/${id}`, DETAIL_EXTRAS);
 }
 
 /** The best YouTube trailer, falling back to a teaser. TMDB lists clips and featurettes too. */

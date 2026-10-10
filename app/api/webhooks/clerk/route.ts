@@ -2,7 +2,7 @@ import { verifyWebhook } from "@clerk/nextjs/webhooks";
 import type { UserJSON, WebhookEvent } from "@clerk/nextjs/server";
 import { NextResponse, type NextRequest } from "next/server";
 import { db } from "@/lib/db";
-import { users, watchlists } from "@/lib/db/schema";
+import { episodeProgress, users, watchlists } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { env } from "@/env";
 import { expirePublicList } from "@/lib/public-lists";
@@ -59,11 +59,13 @@ export async function POST(req: NextRequest) {
     // watchlists.user_id holds the Clerk id with no foreign key to users, so
     // deleting the user row alone would leave their lists behind, public ones
     // still served at /lists/<id>. Items go with their list (ON DELETE CASCADE).
+    // Episode progress is keyed the same way and needs the same treatment.
     const deletedLists = await db.transaction(async (tx) => {
       const lists = await tx
         .delete(watchlists)
         .where(eq(watchlists.userId, userId))
         .returning({ id: watchlists.id });
+      await tx.delete(episodeProgress).where(eq(episodeProgress.userId, userId));
       await tx.delete(users).where(eq(users.clerkId, userId));
       return lists;
     });

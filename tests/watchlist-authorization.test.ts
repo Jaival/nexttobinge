@@ -1,29 +1,9 @@
-import { beforeEach, describe, expect, mock, test } from "bun:test";
+import { beforeEach, describe, expect, test } from "bun:test";
 import { eq } from "drizzle-orm";
 import { watchlists, watchlistItems } from "@/lib/db/schema";
-import { createTestDb } from "./test-db";
+import { ctx, db, request, reset, signIn } from "./app-harness";
 
-// The real route handlers run against a real (in-memory) Postgres. Only the
-// edges are replaced: who is signed in (Clerk), and Next's cache, which needs
-// a running server.
-const { db, reset } = await createTestDb();
-let signedInAs: string | null = null;
-
-mock.module("@/lib/db", () => ({ db }));
-// Module mocks apply to every test file in the run, so the rest of Clerk's
-// server module (createRouteMatcher, used by route-access.test.ts) stays real.
-const clerkServer = await import("@clerk/nextjs/server");
-mock.module("@clerk/nextjs/server", () => ({
-  ...clerkServer,
-  auth: async () => ({ userId: signedInAs }),
-  clerkClient: async () => ({ users: { getUser: async () => ({ firstName: "Owner" }) } }),
-}));
-mock.module("next/cache", () => ({
-  revalidateTag: () => {},
-  unstable_cache: (fn: () => unknown) => fn,
-}));
-
-// Imported after the mocks so they pick them up.
+// Dynamic imports, so they load after app-harness has set up its mocks.
 const listRoute = await import("@/app/api/watchlists/[id]/route");
 const itemsRoute = await import("@/app/api/watchlists/[id]/items/route");
 const itemRoute = await import("@/app/api/watchlists/[id]/items/[itemId]/route");
@@ -32,16 +12,6 @@ const { getPublicList } = await import("@/lib/public-lists");
 
 const OWNER = "user_owner";
 const STRANGER = "user_stranger";
-
-function request(method: string, body?: unknown) {
-  return new Request("http://test.local/api", {
-    method,
-    headers: { "content-type": "application/json" },
-    body: body === undefined ? undefined : JSON.stringify(body),
-  });
-}
-
-const ctx = <T extends Record<string, string>>(params: T) => ({ params: Promise.resolve(params) });
 
 async function createList({ isPublic = false } = {}) {
   const [list] = await db
@@ -59,7 +29,7 @@ const getList = (id: string) => db.query.watchlists.findFirst({ where: eq(watchl
 
 beforeEach(async () => {
   await reset();
-  signedInAs = null;
+  signIn(null);
 });
 
 describe("signed out", () => {
@@ -78,7 +48,7 @@ describe("signed out", () => {
 
 describe("someone else's list", () => {
   beforeEach(() => {
-    signedInAs = STRANGER;
+    signIn(STRANGER);
   });
 
   test("can't be renamed or made public, and the answer is 404, not 403", async () => {
@@ -132,7 +102,7 @@ describe("someone else's list", () => {
 
 describe("the owner", () => {
   beforeEach(() => {
-    signedInAs = OWNER;
+    signIn(OWNER);
   });
 
   test("can rename and share their list", async () => {
