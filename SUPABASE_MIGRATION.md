@@ -25,6 +25,8 @@ How to set up Supabase as the Postgres database and sync Clerk users into it.
    DATABASE_URL=postgresql://postgres.[project-ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres
    ```
 
+> **Don't use the "Direct connection" string.** Its host, `db.[project-ref].supabase.co`, only has an IPv6 address. On an IPv4-only network (many home ISPs, and Vercel) it fails with `getaddrinfo ENOTFOUND`. The pooler hosts (`*.pooler.supabase.com`) have IPv4 addresses.
+
 > **Session mode vs Transaction mode** — Use Transaction mode (port `6543`) for serverless/edge deployments. Use Session mode (port `5432`) only for long-lived server processes that need prepared statements.
 
 ---

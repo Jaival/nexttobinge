@@ -383,6 +383,17 @@ The test planted a row with a metadata URL. It was never fetched and never appea
 
 **Where:** `components/trailer-button.tsx`.
 
+### 8.5 Know how you reach a dependency over the network
+**Rule:** "can't connect" errors are often about the network path, not the service. Check DNS records, and whether you have IPv4 or IPv6, before touching code.
+
+**Here:** every database query failed with `getaddrinfo ENOTFOUND db.<ref>.supabase.co`, even though the project was running. `nslookup` showed why:
+- the host had an IPv6 address (AAAA record) but **no IPv4 address** (A record);
+- this machine has no IPv6 connectivity, so no usable address was found.
+
+Supabase's direct connection is IPv6-only, and Vercel's functions can't reach IPv6 either, so production would have failed the same way. The fix was configuration, not code: use the connection pooler (`*.pooler.supabase.com`, port 6543), which has IPv4 addresses. The pooler's transaction mode can't keep prepared statements between queries, so the client sets `prepare: false`.
+
+**Where:** `lib/db/index.ts`, README (`DATABASE_URL` row), SUPABASE_MIGRATION.md.
+
 ---
 
 ## 9. Observability
