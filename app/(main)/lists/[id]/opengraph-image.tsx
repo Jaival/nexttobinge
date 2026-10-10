@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element -- Satori (ImageResponse) renders plain <img>; next/image doesn't work here. */
 import { ImageResponse } from "next/og";
 import sharp from "sharp";
 import { getPublicList } from "@/lib/public-lists";
@@ -146,7 +147,6 @@ export default async function Image({ params }: { params: Promise<{ id: string }
               }}
             >
               {posters[i] && (
-                // eslint-disable-next-line @next/next/no-img-element -- Satori renders plain <img>.
                 <img
                   src={posters[i]}
                   alt=""

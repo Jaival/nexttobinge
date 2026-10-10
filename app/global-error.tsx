@@ -51,8 +51,13 @@ export default function GlobalError({
               <div className="flex flex-col items-center gap-3">
                 <div className="flex flex-wrap justify-center gap-2">
                   <Button onClick={() => unstable_retry()}>Try again</Button>
-                  {/* A full page load, not <Link>: the router is what failed. */}
-                  <Button variant="outline" onClick={() => window.location.assign("/")}>
+                  {/* A full page load, not <Link> or router.push(): the router is
+                      what failed. */}
+                  <Button
+                    variant="outline"
+                    // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- see above
+                    onClick={() => window.location.assign("/")}
+                  >
                     Go home
                   </Button>
                 </div>
