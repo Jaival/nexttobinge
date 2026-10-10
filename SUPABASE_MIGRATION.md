@@ -31,24 +31,38 @@ How to set up Supabase as the Postgres database and sync Clerk users into it.
 
 ## 3. Run the Database Migrations
 
-### Option A — Supabase SQL Editor (recommended for first setup)
-
-Paste each file in order into **SQL Editor → New query**:
-
-1. `lib/db/migrations/0000_initial.sql` — creates enums, `watchlists`, `watchlist_items`
-2. `lib/db/migrations/0001_users.sql` — creates the `users` table
-3. `lib/db/migrations/0002_unique_watchlist_items.sql` — deletes duplicate watchlist items, then adds a unique index so a title can only be in a list once
-4. `lib/db/migrations/0003_public_watchlists.sql` — adds `is_public` to `watchlists` (run it before deploying code that shares lists)
-
-Click **Run** after each one.
-
-### Option B — Drizzle Kit CLI
+### New database
 
 ```bash
 bun run db:migrate
 ```
 
-This requires `DATABASE_URL` to be set in your environment and uses the Session mode connection (port `5432`).
+This requires `DATABASE_URL` to be set in your environment. It creates the `drizzle.__drizzle_migrations` table, which records each migration as it's applied, so running it again only applies new ones.
+
+`lib/db/migrations/0000_baseline.sql` creates the whole schema in one go: the enums, `users`, `watchlists` (including `is_public`), `watchlist_items`, and the unique index that stops a title appearing twice in one list.
+
+### Already have a database?
+
+Databases set up before the baseline existed were built by pasting the old `0000`–`0003` SQL files into the SQL Editor. Their schema matches the baseline, but Drizzle has no record of it, so `db:migrate` would try to create tables that already exist.
+
+First check the schema really is current: `watchlists` must have an `is_public` column, and `watchlist_items` must have the `watchlist_items_media_unique` index. If either is missing, apply the old files from git history first (`git show e4a9097:lib/db/migrations/0002_unique_watchlist_items.sql`, and the same for `0003_public_watchlists.sql`).
+
+Then run this once in the SQL Editor to mark the baseline as applied:
+
+```sql
+CREATE SCHEMA IF NOT EXISTS drizzle;
+CREATE TABLE IF NOT EXISTS drizzle.__drizzle_migrations (
+  id serial PRIMARY KEY,
+  hash text NOT NULL,
+  created_at bigint
+);
+-- created_at must equal the baseline's "when" in meta/_journal.json: Drizzle
+-- skips every migration at or before the newest created_at it finds here.
+INSERT INTO drizzle.__drizzle_migrations (hash, created_at)
+VALUES ('39cb27e869d3402a5033e47a81a7f56186eb0f0d8696654b81342ea2856dc9d9', 1791632629494);
+```
+
+From then on, `bun run db:migrate` only applies migrations generated after the baseline.
 
 ---
 
