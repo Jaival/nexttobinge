@@ -8,6 +8,7 @@ const LINKS = [
   { href: "/browse/anime", label: "Anime" },
   { href: "/collections", label: "Collections" },
   { href: "/tonight", label: "What to watch tonight" },
+  { href: "/privacy", label: "Privacy" },
 ];
 
 /**

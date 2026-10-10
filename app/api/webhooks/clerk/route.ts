@@ -2,9 +2,10 @@ import { Webhook } from "svix";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { users } from "@/lib/db/schema";
+import { users, watchlists } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { env } from "@/env";
+import { expirePublicList } from "@/lib/public-lists";
 
 type EmailAddress = { email_address: string; id: string };
 
@@ -82,7 +83,20 @@ export async function POST(req: Request) {
   }
 
   if (type === "user.deleted") {
-    await db.delete(users).where(eq(users.clerkId, data.id));
+    // watchlists.user_id holds the Clerk id with no foreign key to users, so
+    // deleting the user row alone would leave their lists behind, public ones
+    // still served at /lists/<id>. Items go with their list (ON DELETE CASCADE).
+    const deletedLists = await db.transaction(async (tx) => {
+      const lists = await tx
+        .delete(watchlists)
+        .where(eq(watchlists.userId, data.id))
+        .returning({ id: watchlists.id });
+      await tx.delete(users).where(eq(users.clerkId, data.id));
+      return lists;
+    });
+    // Shared pages are cached; a deleted account's lists must stop being
+    // served now, not at the next hourly revalidation.
+    for (const list of deletedLists) expirePublicList(list.id);
   }
 
   return NextResponse.json({ received: true });

@@ -11,6 +11,7 @@ const isPublicRoute = createRouteMatcher([
   "/search(.*)",
   "/tonight",
   "/collections(.*)",
+  "/privacy",
   // Shared watchlists and their preview images. The page itself returns 404
   // unless the owner made the list public; proxy.ts only decides who needs
   // to be signed in, not who may see what.
