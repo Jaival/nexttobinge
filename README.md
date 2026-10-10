@@ -61,22 +61,15 @@ AniList requires no API key.
 
 ### 3. Set up the database
 
-Run the migration SQL in your Supabase project's **SQL Editor**, one file at a time, in order:
+Migrations are managed by Drizzle Kit. With `DATABASE_URL` in your shell:
 
 ```bash
-# Contents are in:
-lib/db/migrations/0000_initial.sql
-lib/db/migrations/0001_users.sql
-lib/db/migrations/0002_unique_watchlist_items.sql
-lib/db/migrations/0003_public_watchlists.sql
-```
-
-Or if you prefer to generate and push via Drizzle Kit (requires `DATABASE_URL` in your shell):
-
-```bash
-bun run db:generate
 bun run db:migrate
 ```
+
+This applies everything in `lib/db/migrations/` that the database hasn't seen yet. After changing `lib/db/schema.ts`, run `bun run db:generate` to write a new migration, review the SQL, then migrate.
+
+You can also paste `lib/db/migrations/0000_baseline.sql` into Supabase's **SQL Editor**, but then Drizzle doesn't know it ran. Follow "Already have a database?" in [SUPABASE_MIGRATION.md](SUPABASE_MIGRATION.md) afterwards.
 
 ### 4. Run the development server
 

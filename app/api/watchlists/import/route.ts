@@ -36,7 +36,7 @@ const importSchema = z.object({
  * the import, and the result is the same as running it once.
  * - An advisory lock makes concurrent imports for one user take turns, so they
  *   can't both create "My watchlist".
- * - ON CONFLICT DO NOTHING (backed by the unique index from migration 0002)
+ * - ON CONFLICT DO NOTHING (backed by the watchlist_items_media_unique index)
  *   skips titles that are already in the list.
  */
 export async function POST(req: Request) {
@@ -61,7 +61,7 @@ export async function POST(req: Request) {
     )[0];
 
     // Also skip what's already there in code, so the import stays correct on a
-    // database where migration 0002 hasn't been applied yet.
+    // database that predates the unique index.
     const existing = await tx
       .select({ mediaType: watchlistItems.mediaType, mediaId: watchlistItems.mediaId })
       .from(watchlistItems)
