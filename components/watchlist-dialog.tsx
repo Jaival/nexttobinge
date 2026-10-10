@@ -62,21 +62,30 @@ export function useAddToWatchlist() {
 }
 
 export function WatchlistDialog({ item, open, onOpenChange }: WatchlistDialogProps) {
-  const [watchlists, setWatchlists] = useState<Watchlist[]>([]);
-  const [loading, setLoading] = useState(false);
+  // null until the first load finishes, which is what shows the spinner.
+  // Reopening refetches in the background and keeps the previous list shown.
+  const [watchlists, setWatchlists] = useState<Watchlist[] | null>(null);
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState("");
   const [adding, setAdding] = useState<string | null>(null);
 
   useEffect(() => {
-    if (open) {
-      setLoading(true);
-      fetch("/api/watchlists")
-        .then((r) => r.json())
-        .then((data) => setWatchlists(data))
-        .catch(() => toast.error("Failed to load watchlists"))
-        .finally(() => setLoading(false));
-    }
+    if (!open) return;
+    // Ignores a response that lands after the dialog closed.
+    let current = true;
+    fetch("/api/watchlists")
+      .then((r) => r.json())
+      .then((data: Watchlist[]) => {
+        if (current) setWatchlists(data);
+      })
+      .catch(() => {
+        if (!current) return;
+        toast.error("Failed to load watchlists");
+        setWatchlists((prev) => prev ?? []);
+      });
+    return () => {
+      current = false;
+    };
   }, [open]);
 
   async function handleCreate(e: React.FormEvent) {
@@ -92,7 +101,7 @@ export function WatchlistDialog({ item, open, onOpenChange }: WatchlistDialogPro
       });
       if (!res.ok) throw new Error();
       const created: Watchlist = await res.json();
-      setWatchlists((prev) => [...prev, created]);
+      setWatchlists((prev) => [...(prev ?? []), created]);
       setNewName("");
       toast.success(`Watchlist "${created.name}" created`);
     } catch {
@@ -127,7 +136,7 @@ export function WatchlistDialog({ item, open, onOpenChange }: WatchlistDialogPro
         throw new Error();
       }
       track("Title saved", { as: "account", type: item.type });
-      const wl = watchlists.find((w) => w.id === watchlistId);
+      const wl = watchlists?.find((w) => w.id === watchlistId);
       toast.success(`Added to "${wl?.name ?? "watchlist"}"`);
       onOpenChange(false);
     } catch {
@@ -148,7 +157,7 @@ export function WatchlistDialog({ item, open, onOpenChange }: WatchlistDialogPro
         </DialogHeader>
 
         <div className="flex flex-col gap-2">
-          {loading ? (
+          {watchlists === null ? (
             <div className="flex flex-col gap-2">
               {[1, 2, 3].map((i) => (
                 <div key={i} className="h-10 rounded-md bg-muted animate-pulse" />
