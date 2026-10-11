@@ -25,5 +25,8 @@ export const config = {
   matcher: [
     "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
     "/(api|trpc)(.*)",
+    // Clerk's Frontend API proxy on *.vercel.app. The first pattern skips
+    // paths ending in .js, which would drop the proxied clerk-js bundle.
+    "/__clerk/:path*",
   ],
 };

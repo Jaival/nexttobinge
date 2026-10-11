@@ -5,10 +5,9 @@ export const SITE_NAME = "NextToBinge";
 export const SITE_DESCRIPTION =
   "Find movies, series, and anime to watch. Save them in personal watchlists.";
 
-// Where privacy and terms questions go (both pages link here). The repository
-// is public, so a request filed there is public too: replace this with a
-// private address before launch.
-export const CONTACT_URL = "https://github.com/Jaival/nexttobinge/issues";
+// Where privacy and terms questions go (both pages link here). An email, not
+// GitHub issues: the repository is public, so a request filed there would be too.
+export const CONTACT_URL = "mailto:saijajaival@gmail.com";
 
 // Sitemaps, robots.txt and canonical tags need absolute URLs, so the origin has
 // to be known on the server. Explicit config wins; on Vercel the production
