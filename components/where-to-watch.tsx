@@ -1,107 +1,43 @@
-import Image from "next/image";
 import { ExternalLinkIcon } from "lucide-react";
 import { DetailSection } from "@/components/media-detail";
-import { CountrySelect } from "@/components/country-select";
-import { getCountry } from "@/lib/country";
-import { logoUrl, type TMDBWatchProvider, type TMDBWatchProviders } from "@/lib/tmdb";
+import { WhereToWatchClient } from "@/components/where-to-watch-client";
+import type { TMDBWatchProviders } from "@/lib/tmdb";
 import type { AniListExternalLink } from "@/lib/anilist";
 
 const regionNames = new Intl.DisplayNames(["en"], { type: "region" });
 
-function countryName(code: string) {
-  return regionNames.of(code) ?? code;
-}
-
-/** Free and ad-supported services are still "stream", just cheaper. */
-function uniqueProviders(...lists: (TMDBWatchProvider[] | undefined)[]) {
-  const seen = new Map<number, TMDBWatchProvider>();
-  for (const provider of lists.flat()) {
-    if (provider && !seen.has(provider.provider_id)) seen.set(provider.provider_id, provider);
+/**
+ * Streaming, rental and purchase options for a movie or series. The visitor's
+ * country isn't known here: reading it would make the page render per request,
+ * so the client picks it. The server trims the TMDB response to what the UI
+ * uses, since all of it is sent to the browser, and names every country so the
+ * names match no matter the browser's ICU data.
+ */
+export function WhereToWatch({ providers = {} }: { providers?: TMDBWatchProviders }) {
+  const trimmed: TMDBWatchProviders = {};
+  for (const [code, entry] of Object.entries(providers)) {
+    const pick = (list?: typeof entry.flatrate) =>
+      list?.map(({ provider_id, provider_name, logo_path, display_priority }) => ({
+        provider_id,
+        provider_name,
+        logo_path,
+        display_priority,
+      }));
+    trimmed[code] = {
+      link: entry.link,
+      flatrate: pick(entry.flatrate),
+      free: pick(entry.free),
+      ads: pick(entry.ads),
+      rent: pick(entry.rent),
+      buy: pick(entry.buy),
+    };
   }
-  return [...seen.values()].sort((a, b) => a.display_priority - b.display_priority);
-}
 
-function ProviderRow({
-  label,
-  providers,
-  link,
-}: {
-  label: string;
-  providers: TMDBWatchProvider[];
-  link: string;
-}) {
-  if (providers.length === 0) return null;
-  return (
-    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
-      <p className="text-meta w-12 shrink-0 text-muted-foreground">{label}</p>
-      <ul className="flex flex-wrap gap-2">
-        {providers.map((p) => (
-          <li key={p.provider_id}>
-            {/* TMDB's page for the title holds the per-service deep links;
-                the API itself only says which services have it. */}
-            <a
-              href={link}
-              target="_blank"
-              rel="noopener noreferrer"
-              title={p.provider_name}
-              className="relative block size-10 overflow-hidden rounded-lg ring-1 ring-foreground/10 transition-opacity duration-150 hover:opacity-80"
-            >
-              <Image src={logoUrl(p.logo_path)} alt={p.provider_name} fill sizes="40px" />
-            </a>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-/** Streaming, rental and purchase options for a movie or series, in the visitor's country. */
-export async function WhereToWatch({ providers = {} }: { providers?: TMDBWatchProviders }) {
-  const country = await getCountry();
-  const here = providers[country];
-
-  // Every country TMDB has data for, plus the current one so the picker can
-  // show it even when it has no entry.
-  const countries = [...new Set([country, ...Object.keys(providers)])]
-    .map((code) => ({ code, name: countryName(code) }))
+  const countries = Object.keys(trimmed)
+    .map((code) => ({ code, name: regionNames.of(code) ?? code }))
     .sort((a, b) => a.name.localeCompare(b.name));
 
-  const stream = uniqueProviders(here?.flatrate, here?.free, here?.ads);
-  const rent = uniqueProviders(here?.rent);
-  const buy = uniqueProviders(here?.buy);
-  const available = stream.length + rent.length + buy.length > 0;
-
-  return (
-    <DetailSection
-      title="Where to watch"
-      action={<CountrySelect value={country} countries={countries} />}
-    >
-      {here && available ? (
-        <div className="flex flex-col gap-3">
-          <ProviderRow label="Stream" providers={stream} link={here.link} />
-          <ProviderRow label="Rent" providers={rent} link={here.link} />
-          <ProviderRow label="Buy" providers={buy} link={here.link} />
-        </div>
-      ) : (
-        <p className="text-sm text-muted-foreground">
-          Not available to stream, rent or buy in {countryName(country)} yet.
-        </p>
-      )}
-      {/* Required: TMDB's provider data is licensed from JustWatch. */}
-      <p className="text-xs text-muted-foreground">
-        Availability data from{" "}
-        <a
-          href="https://www.justwatch.com"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="underline underline-offset-2 hover:text-foreground"
-        >
-          JustWatch
-        </a>
-        .
-      </p>
-    </DetailSection>
-  );
+  return <WhereToWatchClient providers={trimmed} countries={countries} />;
 }
 
 /**

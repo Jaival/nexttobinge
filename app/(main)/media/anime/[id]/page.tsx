@@ -16,6 +16,16 @@ interface PageProps {
   params: Promise<{ id: string }>;
 }
 
+// ISR: nothing here reads cookies or headers, so each title is rendered on its first
+// visit, cached, and refreshed at most hourly. The visitor's country is resolved in
+// the browser (components/where-to-watch-client.tsx). An empty list prerenders nothing
+// at build time; dynamicParams (default true) allows the rest on demand.
+export const revalidate = 3600;
+
+export function generateStaticParams() {
+  return [];
+}
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const animeId = Number((await params).id);
   const anime = isNaN(animeId) ? null : await getAnimeDetails(animeId).catch(() => null);
