@@ -16,6 +16,11 @@ import { absoluteUrl } from "@/lib/seo";
 // other URLs. Indexed, they'd compete with production as duplicate content,
 // so they ask every crawler to stay out. VERCEL_ENV is set by Vercel:
 // "production", "preview" or "development".
+//
+// GPTBot (OpenAI's training crawler) followed the "more like this" links
+// through every movie at a steady 2 requests a second: 27K requests in four
+// hours, each an uncached page render. It obeys robots.txt, so it is asked to
+// stay out entirely. OAI-SearchBot (ChatGPT search results) is not blocked.
 const BROWSE_FILTER_PARAMS = ["sort", "genre", "year", "rating", "format"];
 
 export default function robots(): MetadataRoute.Robots {
@@ -23,19 +28,22 @@ export default function robots(): MetadataRoute.Robots {
     return { rules: { userAgent: "*", disallow: "/" } };
   }
   return {
-    rules: {
-      userAgent: "*",
-      allow: "/",
-      disallow: [
-        "/api/",
-        "/watchlists",
-        "/sign-in",
-        "/sign-up",
-        "/search",
-        "/tonight",
-        ...BROWSE_FILTER_PARAMS.flatMap((p) => [`/browse/*?${p}=`, `/browse/*&${p}=`]),
-      ],
-    },
+    rules: [
+      {
+        userAgent: "*",
+        allow: "/",
+        disallow: [
+          "/api/",
+          "/watchlists",
+          "/sign-in",
+          "/sign-up",
+          "/search",
+          "/tonight",
+          ...BROWSE_FILTER_PARAMS.flatMap((p) => [`/browse/*?${p}=`, `/browse/*&${p}=`]),
+        ],
+      },
+      { userAgent: "GPTBot", disallow: "/" },
+    ],
     sitemap: absoluteUrl("/sitemap.xml"),
   };
 }
