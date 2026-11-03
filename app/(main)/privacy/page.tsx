@@ -130,6 +130,10 @@ export default function PrivacyPage() {
               for error reports
             </li>
             <li>
+              TMDB, AniList and Kitsu, which serve posters and images straight to your browser. Like
+              any website, they see your IP address and browser type when an image loads.
+            </li>
+            <li>
               YouTube, only when you press play on a trailer. Trailers load from
               youtube-nocookie.com, which doesn&apos;t set tracking cookies until you interact with
               the video.

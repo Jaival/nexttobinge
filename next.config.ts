@@ -32,8 +32,8 @@ function contentSecurityPolicy() {
     // va.vercel-scripts.com serves the Analytics script outside Vercel.
     `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} ${clerkOrigin} https://challenges.cloudflare.com https://*.protect.clerk.com https://va.vercel-scripts.com`,
     "style-src 'self' 'unsafe-inline'",
-    // Posters go through /_next/image ('self'). The CDNs are listed for the
-    // few places that load them directly; img.clerk.com serves avatars.
+    // Posters load straight from these CDNs (lib/image-loader.ts);
+    // img.clerk.com serves avatars.
     "img-src 'self' data: blob: https://img.clerk.com https://image.tmdb.org https://s4.anilist.co https://media.kitsu.app",
     "font-src 'self' data:",
     // Sentry reports go through the same-origin /monitoring tunnel, and
@@ -81,6 +81,14 @@ const nextConfig: NextConfig = {
     return [{ source: "/browse/dramas", destination: "/browse/series", permanent: true }];
   },
   images: {
+    // Images load straight from TMDB/AniList/Kitsu at the sizes TMDB already
+    // serves, not through Vercel's optimizer (see lib/image-loader.ts).
+    loader: "custom",
+    loaderFile: "./lib/image-loader.ts",
+    // Only used by Vercel's optimizer, so it has no effect while the custom
+    // loader is on. Set high so that switching back can't repeat the bill:
+    // posters never change, so cached copies may live for 31 days.
+    minimumCacheTTL: 2678400,
     remotePatterns: [
       {
         protocol: "https",
