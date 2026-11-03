@@ -10,6 +10,9 @@ export async function register() {
   Sentry.init({
     ...SENTRY_OPTIONS,
     dsn,
+    // Trace 10% of requests: enough to spot slow routes, cheap on the free tier.
+    // Server events go straight to Sentry, so this costs no extra function time.
+    tracesSampleRate: 0.1,
     // Keeps preview-deployment errors apart from production ones.
     environment: process.env.VERCEL_ENV ?? process.env.NODE_ENV,
   });

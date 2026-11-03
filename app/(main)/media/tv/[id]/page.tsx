@@ -24,6 +24,16 @@ interface PageProps {
 }
 
 // Shares the page's TMDB request: Next.js memoizes identical GET fetches.
+// ISR: nothing here reads cookies or headers, so each title is rendered on its first
+// visit, cached, and refreshed at most hourly. The visitor's country is resolved in
+// the browser (components/where-to-watch-client.tsx). An empty list prerenders nothing
+// at build time; dynamicParams (default true) allows the rest on demand.
+export const revalidate = 3600;
+
+export function generateStaticParams() {
+  return [];
+}
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const tvId = Number((await params).id);
   const show = isNaN(tvId) ? null : await getTVDetails(tvId).catch(() => null);

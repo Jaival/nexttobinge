@@ -23,6 +23,16 @@ interface PageProps {
 
 // generateMetadata and the page both ask for the same movie. Next.js memoizes
 // identical GET fetches within one request, so TMDB is only called once.
+// ISR: nothing here reads cookies or headers, so each title is rendered on its first
+// visit, cached, and refreshed at most hourly. The visitor's country is resolved in
+// the browser (components/where-to-watch-client.tsx). An empty list prerenders nothing
+// at build time; dynamicParams (default true) allows the rest on demand.
+export const revalidate = 3600;
+
+export function generateStaticParams() {
+  return [];
+}
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const movieId = Number((await params).id);
   const movie = isNaN(movieId) ? null : await getMovieDetails(movieId).catch(() => null);

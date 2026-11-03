@@ -53,6 +53,11 @@ function contentSecurityPolicy() {
 }
 
 const nextConfig: NextConfig = {
+  experimental: {
+    // `next dev` and `next build` stop to recommend an upgrade when the
+    // installed Next.js has a published security advisory (the default policy).
+    agentUpgrade: "security",
+  },
   async headers() {
     return [
       {

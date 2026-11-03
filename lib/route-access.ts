@@ -15,6 +15,8 @@ export const isPublicApiRoute = createRouteMatcher([
   "/api/webhooks(.*)",
   // Uptime monitors never have a session.
   "/api/health",
+  // Geolocates the visitor for the title pages; signed-out visitors need it.
+  "/api/country",
 ]);
 
 export const isApiRoute = createRouteMatcher(["/api(.*)"]);

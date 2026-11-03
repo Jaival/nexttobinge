@@ -40,7 +40,7 @@ describe("signed-out visitors", () => {
     }
   );
 
-  test.each(["/api/health", "/api/webhooks/clerk"])("can reach %s", (path) => {
+  test.each(["/api/health", "/api/country", "/api/webhooks/clerk"])("can reach %s", (path) => {
     expect(signedOutOutcome(path)).toBe("allow");
   });
 });

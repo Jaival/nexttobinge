@@ -24,7 +24,7 @@ const linkClass = "underline underline-offset-2 hover:text-foreground";
 
 /**
  * Written from what the code actually does: lib/sentry.ts, lib/analytics.ts,
- * lib/guest-watchlist.ts, app/actions/country.ts and the Clerk webhook. If
+ * lib/guest-watchlist.ts, app/api/country/route.ts and the Clerk webhook. If
  * any of those change what they collect or send, this page has to change too.
  */
 export default function PrivacyPage() {
